@@ -17,7 +17,7 @@ import tempfile
 import zipfile
 from urllib.parse import urlparse
 
-from flask import Flask, request, send_file, render_template_string, Response
+from flask import Flask, request, send_file, render_template_string, Response, jsonify
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))   # repo root -> schemagen
@@ -97,6 +97,10 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .actions{display:flex;gap:.6rem;margin-top:1.3rem}
  .actions button{border-radius:9px;padding:.55rem 1rem;font:600 .9rem 'Inter';cursor:pointer;border:1px solid var(--line);background:var(--surface2);color:var(--text)}
  .actions .save{background:var(--grad);color:#151515;border:0;font-family:'Poppins'}.actions .ghost{margin-left:auto;background:transparent}
+ .pwrap{height:10px;background:var(--surface2);border-radius:999px;overflow:hidden;margin:1.1rem 0 .7rem}
+ .pbar{height:100%;width:38%;background:var(--grad);border-radius:999px;animation:slide 1.3s ease-in-out infinite}
+ @keyframes slide{0%{transform:translateX(-120%)}100%{transform:translateX(330%)}}
+ #pstatus{color:var(--muted);font-size:.86rem}
 </style></head><body>
 <header class="topbar">
   <div class="brand"><img src="/static/webblend-logo.png" alt="Web Blend"><span class="appname">Schema Generator</span></div>
@@ -115,7 +119,7 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
   descriptions from the site. Output: bare <code>.json</code> JSON-LD, delivered as
   two zips (site-wide + per-page).</p>
 </div>
-<form method="post" action="/generate">
+<form id="genform" method="post" action="/generate">
 <input type="hidden" name="search_url" id="f_search_url">
 <div class="card auto">
   <label class="switch"><input class="chk" type="checkbox" name="autobuild" id="autobuild" checked> Auto-build schema from the website</label>
@@ -163,6 +167,7 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 </div>
 <button class="primary" type="submit">Generate &amp; download</button>
 </form>
+<div id="formerr" class="err" style="display:none"></div>
 {% if error %}<p class="err"><b>Error:</b> {{ error }}</p>{% endif %}
 <p class="foot">Web Blend · Schema Generator — structured data that helps Google understand the business.</p>
 </div>
@@ -182,6 +187,12 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
     </div>
     <div class="actions"><button class="save" id="s_save">Save</button>
       <button id="s_reset">Reset</button><button class="ghost" id="s_close">Close</button></div>
+</div></div>
+
+<div class="overlay" id="progress"><div class="modal">
+  <h2 style="display:block;border:0;color:var(--text)">Generating schema…</h2>
+  <div class="pwrap"><div class="pbar"></div></div>
+  <div id="pstatus">Starting…</div>
 </div></div>
 
 <script>
@@ -209,6 +220,52 @@ $("#s_reset").onclick=()=>{localStorage.removeItem(SK);
   $("#f_itype").value="";$("#f_country").value="US";$("#f_search_url").value="";
   ["p_about","p_contact","p_collection","p_faq"].forEach(i=>$("#"+i).checked=false);};
 apply();
+
+// ---- progress + fetch submit ----
+const PF=$("#genform");
+const STEPS_AUTO=["Connecting to the site…","Crawling pages (sitemap & links)…",
+  "Reading titles & descriptions…","Writing schema for each page…","Packaging JSON into zips…"];
+const STEPS_MAN=["Building schema…","Packaging JSON into zips…"];
+let ptimer=null,pt0=0;
+function showProgress(auto){
+  const steps=auto?STEPS_AUTO:STEPS_MAN; let i=0; pt0=Date.now();
+  $("#pstatus").textContent=steps[0]+" (0s)";
+  $("#progress").classList.add("open");
+  ptimer=setInterval(()=>{
+    const s=Math.round((Date.now()-pt0)/1000);
+    if(i<steps.length-1 && s>=(i+1)*6) i++;
+    $("#pstatus").textContent=steps[i]+" ("+s+"s)";
+  },500);
+}
+function hideProgress(){clearInterval(ptimer);$("#progress").classList.remove("open");}
+PF.addEventListener("submit",async e=>{
+  e.preventDefault();
+  $("#formerr").style.display="none";
+  showProgress($("#autobuild").checked);
+  try{
+    const resp=await fetch("/generate",{method:"POST",body:new FormData(PF)});
+    const ct=resp.headers.get("Content-Type")||"";
+    if(resp.ok && ct.includes("application/zip")){
+      const blob=await resp.blob();
+      const cd=resp.headers.get("Content-Disposition")||"";
+      const m=cd.match(/filename=([^;]+)/);
+      const name=m?m[1].trim().replace(/"/g,""):"schema.zip";
+      const u=URL.createObjectURL(blob);
+      const a=document.createElement("a");a.href=u;a.download=name;
+      document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);
+      hideProgress();
+    }else{
+      let msg="Something went wrong.";
+      try{const j=await resp.json();if(j&&j.error)msg=j.error;}catch(_){}
+      hideProgress();
+      const fe=$("#formerr");fe.textContent="Error: "+msg;fe.style.display="block";
+      fe.scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  }catch(err){
+    hideProgress();
+    const fe=$("#formerr");fe.textContent="Network error: "+err.message;fe.style.display="block";
+  }
+});
 </script>
 </body></html>"""
 
@@ -256,11 +313,15 @@ def healthz():
     return "ok", 200
 
 
+def _err(msg, code=400):
+    return jsonify({"error": msg}), code
+
+
 @app.route("/generate", methods=["POST"])
 def generate():
     f = request.form
     if not f.get("name") or not f.get("domain"):
-        return render_template_string(FORM, error="Business name and domain are required.")
+        return _err("Business name and domain are required.")
     data = {k: f.get(k, "").strip() for k in
             ("name", "legal", "domain", "itype", "phone", "email", "desc", "disambig",
              "logo", "locality", "region", "country", "street", "owner", "hours",
@@ -282,11 +343,12 @@ def generate():
             site = crawl.crawl(data["domain"],
                                max_pages=int(os.environ.get("CRAWL_MAX", "25")))
         except Exception as e:
-            return render_template_string(FORM, error=f"Crawl failed: {e}")
-        if not site or not site["pages"]:
-            return render_template_string(
-                FORM, error="Couldn't crawl that domain (no reachable pages). "
-                            "Check the URL, or turn off Auto-build and add pages manually.")
+            return _err(f"Crawl failed: {type(e).__name__}: {e}")
+        if not site or not site.get("pages"):
+            reason = (site or {}).get("error") or "no reachable pages"
+            return _err(f"Couldn't crawl {data['domain']} — {reason}. "
+                        "The site may block automated requests or require JavaScript. "
+                        "Turn off Auto-build to add pages manually.")
         a = site["assets"]
         if not data["logo"] and a.get("logo"):
             data["logo"] = a["logo"]
@@ -341,7 +403,7 @@ def generate():
         if isinstance(extra, list):
             pages.extend(extra)
     except json.JSONDecodeError as e:
-        return render_template_string(FORM, error=f"Pages JSON invalid: {e}")
+        return _err(f"Pages JSON invalid: {e}")
 
     config = {"project": biz, "domain": data["domain"],
               "sitewide": {"overrides": sw}, "pages": pages}
@@ -351,7 +413,7 @@ def generate():
         try:
             written = project.generate(config, base=tmp)
         except Exception as e:
-            return render_template_string(FORM, error=f"{type(e).__name__}: {e}")
+            return _err(f"{type(e).__name__}: {e}")
         site_files = [p for p in written if os.path.basename(p) == "sitewide.json"]
         page_files = [p for p in written if os.path.basename(p) != "sitewide.json"]
         sitewide_zip = _zip_bytes([(os.path.basename(p), p) for p in site_files])

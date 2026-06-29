@@ -15,7 +15,12 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
-UA = {"User-Agent": "Mozilla/5.0 (compatible; WebBlendSchemaBot/1.0; +https://webblend.us)"}
+UA = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
 
 SOCIAL = {
     "facebook.com": "facebook", "fb.com": "facebook",
@@ -49,14 +54,29 @@ def _norm(base, host, href):
     return p.scheme + "://" + p.netloc + p.path.rstrip("/") if p.path != "/" else p.scheme + "://" + p.netloc + "/"
 
 
+def _fetch(url, timeout=12, retries=1):
+    """Return (response, error_reason). response is None on failure."""
+    reason = "unreachable"
+    for attempt in range(retries + 1):
+        try:
+            r = requests.get(url, headers=UA, timeout=timeout, allow_redirects=True)
+            if r.status_code == 200:
+                return r, None
+            if r.status_code in (401, 403, 406, 429, 503):
+                return None, (f"the site returned HTTP {r.status_code} — it likely "
+                              "blocks automated requests (bot protection/WAF)")
+            reason = f"HTTP {r.status_code}"
+        except requests.Timeout:
+            reason = f"timed out after {timeout}s"
+            timeout = min(timeout + 8, 25)
+        except requests.RequestException as e:
+            reason = type(e).__name__.replace("Error", " error")
+    return None, reason
+
+
 def _get(url, timeout=8):
-    try:
-        r = requests.get(url, headers=UA, timeout=timeout, allow_redirects=True)
-        if r.status_code == 200:
-            return r
-    except requests.RequestException:
-        pass
-    return None
+    r, _ = _fetch(url, timeout=timeout, retries=0)
+    return r
 
 
 def _sitemap_urls(base, host, cap):
@@ -177,8 +197,13 @@ def crawl(domain, max_pages=25, timeout=8):
     base = p.scheme + "://" + p.netloc
     host = p.netloc
 
-    home = _get(base + "/", timeout=timeout)
-    assets = _extract_assets(home.text, base) if home else {"logo": "", "social": [], "description": ""}
+    # Fetch the homepage first (with a retry). If this fails, bail fast with the
+    # real reason instead of grinding through sitemap/link attempts.
+    home, err = _fetch(base + "/", timeout=timeout, retries=1)
+    if not home:
+        return {"base": base, "host": host, "error": err,
+                "assets": {"logo": "", "social": [], "description": ""}, "pages": []}
+    assets = _extract_assets(home.text, base)
 
     urls = _sitemap_urls(base, host, max_pages) or _crawl_links(base + "/", host, max_pages)
     # homepage first, dedup, cap
@@ -194,7 +219,8 @@ def crawl(domain, max_pages=25, timeout=8):
         for m in ex.map(_page_meta, ordered):
             if m:
                 pages.append(m)
-    return {"base": base, "host": host, "assets": assets, "pages": pages}
+    return {"base": base, "host": host, "assets": assets, "pages": pages,
+            "error": None if pages else "no crawlable pages were found"}
 
 
 def page_node_type(url):
