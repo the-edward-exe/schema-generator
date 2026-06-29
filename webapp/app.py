@@ -25,6 +25,7 @@ sys.path.insert(0, _HERE)                     # webapp -> crawl, describe
 from schemagen import core, identity, project  # noqa: E402
 import crawl  # noqa: E402
 import describe  # noqa: E402
+import convert  # noqa: E402
 
 app = Flask(__name__)
 
@@ -169,6 +170,32 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 </form>
 <div id="formerr" class="err" style="display:none"></div>
 {% if error %}<p class="err"><b>Error:</b> {{ error }}</p>{% endif %}
+<div class="card">
+<h2>Output &amp; Conversion</h2>
+<p class="hint">Paste any JSON — e.g. a node from your generated schema — and convert it to a
+JSON&nbsp;Schema, typed code, or SQL DDL. Then copy it to the clipboard.</p>
+<label>JSON input</label>
+<textarea id="cv_input" placeholder='{"@type":"Organization","name":"Acme Co","numberOfEmployees":12}'></textarea>
+<div class="row">
+  <div><label>Format</label>
+    <select id="cv_format">
+      <option value="json-schema">JSON Schema</option>
+      <option value="typescript">TypeScript</option>
+      <option value="python">Python (TypedDict)</option>
+      <option value="go">Go structs</option>
+      <option value="java">Java classes</option>
+      <option value="sql">SQL DDL</option>
+    </select></div>
+  <div><label>Root type name</label><input id="cv_root" value="Root"></div>
+</div>
+<button type="button" class="primary" id="cv_btn" style="margin-top:1rem">Convert</button>
+<div id="cv_err" class="err" style="display:none"></div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem">
+  <label style="margin:0">Output</label>
+  <button type="button" id="cv_copy" style="background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:.4rem .9rem;font:600 .82rem 'Inter';cursor:pointer">Copy to clipboard</button>
+</div>
+<textarea id="cv_output" readonly style="min-height:9rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem"></textarea>
+</div>
 <p class="foot">Web Blend · Schema Generator — structured data that helps Google understand the business.</p>
 </div>
 
@@ -266,6 +293,28 @@ PF.addEventListener("submit",async e=>{
     const fe=$("#formerr");fe.textContent="Network error: "+err.message;fe.style.display="block";
   }
 });
+
+// ---- converter ----
+$("#cv_btn").onclick=async()=>{
+  $("#cv_err").style.display="none";
+  const fd=new FormData();
+  fd.append("json",$("#cv_input").value);
+  fd.append("format",$("#cv_format").value);
+  fd.append("root",$("#cv_root").value||"Root");
+  try{
+    const r=await fetch("/convert",{method:"POST",body:fd});
+    if(r.ok){$("#cv_output").value=await r.text();}
+    else{let m="Conversion failed.";try{const j=await r.json();if(j&&j.error)m=j.error;}catch(_){}
+      const e=$("#cv_err");e.textContent="Error: "+m;e.style.display="block";}
+  }catch(err){const e=$("#cv_err");e.textContent="Network error: "+err.message;e.style.display="block";}
+};
+$("#cv_copy").onclick=async()=>{
+  const t=$("#cv_output").value; if(!t)return;
+  const btn=$("#cv_copy"),old=btn.textContent;
+  try{await navigator.clipboard.writeText(t);}
+  catch(e){$("#cv_output").select();document.execCommand("copy");}
+  btn.textContent="Copied!";setTimeout(()=>btn.textContent=old,1500);
+};
 </script>
 </body></html>"""
 
@@ -313,6 +362,18 @@ def healthz():
     return "ok", 200
 
 
+@app.route("/convert", methods=["POST"])
+def convert_route():
+    text = request.form.get("json", "")
+    fmt = request.form.get("format", "json-schema")
+    root = request.form.get("root", "Root") or "Root"
+    try:
+        out = convert.convert(text, fmt, root=root)
+    except ValueError as e:
+        return _err(str(e))
+    return Response(out, mimetype="text/plain; charset=utf-8")
+
+
 def _err(msg, code=400):
     return jsonify({"error": msg}), code
 
@@ -341,7 +402,8 @@ def generate():
     if auto:
         try:
             site = crawl.crawl(data["domain"],
-                               max_pages=int(os.environ.get("CRAWL_MAX", "25")))
+                               max_pages=int(os.environ.get("CRAWL_MAX", "25")),
+                               timeout=int(os.environ.get("CRAWL_TIMEOUT", "20")))
         except Exception as e:
             return _err(f"Crawl failed: {type(e).__name__}: {e}")
         if not site or not site.get("pages"):

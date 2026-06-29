@@ -167,8 +167,8 @@ def _extract_assets(html, base):
     return {"logo": logo, "social": socials, "description": desc}
 
 
-def _page_meta(url):
-    r = _get(url, timeout=8)
+def _page_meta(url, timeout=8):
+    r = _get(url, timeout=timeout)
     if not r or "html" not in r.headers.get("Content-Type", "").lower():
         return None
     soup = BeautifulSoup(r.text, "html.parser")
@@ -215,8 +215,9 @@ def crawl(domain, max_pages=25, timeout=8):
             break
 
     pages = []
+    per_page = max(6, min(timeout, 20))
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-        for m in ex.map(_page_meta, ordered):
+        for m in ex.map(lambda u: _page_meta(u, timeout=per_page), ordered):
             if m:
                 pages.append(m)
     return {"base": base, "host": host, "assets": assets, "pages": pages,

@@ -27,3 +27,10 @@ services:
         scope: RUN_TIME
         type: SECRET
         value: CHANGE_ME
+      # Optional tuning (also override in the dashboard):
+      - key: CRAWL_TIMEOUT     # per-request crawl timeout seconds (default 20)
+        scope: RUN_TIME
+        value: "30"
+      # - key: CRAWL_MAX       # max pages to crawl (default 25)
+      # - key: ANTHROPIC_API_KEY  # set (encrypted) to enable AI descriptions
+      # - key: SCHEMA_LLM_MODEL   # default claude-haiku-4-5-20251001
