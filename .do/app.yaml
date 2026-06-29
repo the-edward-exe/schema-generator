@@ -8,7 +8,7 @@ services:
     instance_size_slug: basic-xxs        # smallest paid; or apps-s-1vcpu-0.5gb
     instance_count: 1
     http_port: 8080
-    run_command: gunicorn --workers 2 --bind 0.0.0.0:8080 webapp.app:app
+    run_command: gunicorn --workers 2 --timeout 180 --bind 0.0.0.0:8080 webapp.app:app
     github:
       repo: the-edward-exe/schema-generator
       branch: main

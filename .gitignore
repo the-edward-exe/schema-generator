@@ -12,3 +12,4 @@ tech-supporting-documents/
 
 # local-only deploy spec (contains a secret)
 .do/app.git.yaml
+.do/app.github.yaml

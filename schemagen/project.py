@@ -96,7 +96,7 @@ def write(graph, project_name, filename, base="."):
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, filename)
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write(core.to_jsonld(graph) + "\n")
+        fh.write(core.to_jsonld(graph, wrap=False) + "\n")  # bare JSON-LD
     return path
 
 
@@ -127,11 +127,11 @@ def generate(config, base="."):
     sw_graph = build_sitewide(domain, sw.get("overrides", {}),
                               nodes=sw.get("nodes",
                                            ("organization", "localbusiness", "website")))
-    written.append(write(sw_graph, name, "sitewide.schema.html", base))
+    written.append(write(sw_graph, name, "sitewide.json", base))
     sw_frags = tuple(sw.get("nodes", ("organization", "localbusiness", "website")))
 
     for page in config.get("pages", []):
         g = build_page(domain, page["path"], page["nodes"],
                        page.get("overrides", {}), sitewide_fragments=sw_frags)
-        written.append(write(g, name, page["file"] + ".schema.html", base))
+        written.append(write(g, name, page["file"] + ".json", base))
     return written

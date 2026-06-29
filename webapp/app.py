@@ -1,9 +1,10 @@
 """Web UI for the schema generator — a thin Flask wrapper over schemagen.
 
-Fill the business form, optionally tick standard pages / paste advanced page
-specs, and download a ZIP of the schema files (one per page, plus sitewide).
-Web Blend-branded landing page + a gear Settings panel (browser-stored defaults).
-Designed for DigitalOcean App Platform (gunicorn webapp.app:app).
+Enter a business + domain; the app can auto-crawl the site, build a strategic
+schema profile (sitewide identity + a WebPage schema per page, plus Person /
+Service / Article / CollectionPage where detected), auto-fill logo, socials and
+descriptions from the site, and return the JSON-LD as two zips (site-wide vs
+per-page) inside one download. Web Blend-branded, with a gear Settings panel.
 """
 import datetime
 import hmac
@@ -14,16 +15,19 @@ import re
 import sys
 import tempfile
 import zipfile
+from urllib.parse import urlparse
 
 from flask import Flask, request, send_file, render_template_string, Response
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(_HERE))   # repo root -> schemagen
+sys.path.insert(0, _HERE)                     # webapp -> crawl, describe
 from schemagen import core, identity, project  # noqa: E402
+import crawl  # noqa: E402
+import describe  # noqa: E402
 
 app = Flask(__name__)
 
-# Optional HTTP basic auth. Set AUTH_USER + AUTH_PASS (env vars / App Platform
-# secrets) to require login on every route except the platform health check.
 AUTH_USER = os.environ.get("AUTH_USER", "")
 AUTH_PASS = os.environ.get("AUTH_PASS", "")
 
@@ -49,63 +53,50 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 <style>
- :root{
-   --ink:#151515; --surface:#1F1F1F; --surface2:#2A2A2A; --line:#3a3a3a;
-   --orange:#FE8F35; --orange2:#ED7A1C; --gold:#F7C74A;
-   --text:#ECECEC; --muted:#B9B9B9;
-   --grad:linear-gradient(135deg,#FE8F35 0%,#F7C74A 100%);
- }
+ :root{--ink:#151515;--surface:#1F1F1F;--surface2:#2A2A2A;--line:#3a3a3a;
+   --orange:#FE8F35;--orange2:#ED7A1C;--gold:#F7C74A;--text:#ECECEC;--muted:#B9B9B9;
+   --grad:linear-gradient(135deg,#FE8F35 0%,#F7C74A 100%);}
  *{box-sizing:border-box}
  body{font:15px/1.6 'Inter',system-ui,sans-serif;background:var(--ink);color:var(--text);margin:0}
  h1,h2,.appname{font-family:'Poppins',sans-serif;letter-spacing:-.01em}
- .topbar{display:flex;align-items:center;justify-content:space-between;
-   padding:.9rem 1.25rem;border-bottom:1px solid var(--line);
-   background:#121212;position:sticky;top:0;z-index:5}
- .brand{display:flex;align-items:center;gap:.7rem}
- .brand img{height:30px;display:block}
+ .topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.25rem;
+   border-bottom:1px solid var(--line);background:#121212;position:sticky;top:0;z-index:5}
+ .brand{display:flex;align-items:center;gap:.7rem}.brand img{height:30px;display:block}
  .appname{font-weight:700;font-size:1.05rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
  .gear{background:transparent;border:1px solid var(--line);border-radius:10px;width:40px;height:40px;
    display:grid;place-items:center;cursor:pointer;color:var(--orange);transition:.2s}
- .gear:hover{border-color:var(--orange);transform:rotate(45deg)}
- .gear svg{width:20px;height:20px}
+ .gear:hover{border-color:var(--orange);transform:rotate(45deg)}.gear svg{width:20px;height:20px}
  .wrap{max-width:780px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
- .hero{margin:.5rem 0 1.6rem}
- .hero h1{font-size:1.9rem;margin:.2rem 0 .4rem;line-height:1.15}
+ .hero{margin:.5rem 0 1.6rem}.hero h1{font-size:1.9rem;margin:.2rem 0 .4rem;line-height:1.15}
  .hero h1 .accent{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
- .lede{color:var(--muted);margin:0;max-width:60ch}
- .lede code{background:var(--surface2);padding:.05rem .35rem;border-radius:5px;color:#fff;font-size:.85em}
- h2{font-size:1rem;margin:1.8rem 0 .4rem;color:var(--orange);
-   border-bottom:1px solid var(--line);padding-bottom:.35rem}
+ .lede{color:var(--muted);margin:0;max-width:62ch}.lede code{background:var(--surface2);padding:.05rem .35rem;border-radius:5px;color:#fff;font-size:.85em}
+ h2{font-size:1rem;margin:1.8rem 0 .4rem;color:var(--orange);border-bottom:1px solid var(--line);padding-bottom:.35rem}
  label{display:block;margin:.7rem 0 .2rem;font-weight:600;font-size:.83rem;color:#d8d8d8}
  .hint{font-weight:400;color:var(--muted);font-size:.78rem}
- input,textarea,select{width:100%;padding:.55rem .65rem;border:1px solid var(--line);
-   border-radius:8px;font:inherit;background:var(--surface2);color:var(--text)}
+ input,textarea,select{width:100%;padding:.55rem .65rem;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--surface2);color:var(--text)}
  input::placeholder,textarea::placeholder{color:#7c7c7c}
  input:focus,textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(254,143,53,.18)}
  textarea{min-height:3.5rem;resize:vertical}
  .row{display:flex;gap:.8rem;flex-wrap:wrap}.row>div{flex:1;min-width:160px}
  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.25rem;margin-top:1rem}
+ .auto{background:linear-gradient(135deg,rgba(254,143,53,.12),rgba(247,199,74,.06));border-color:#5a4326}
  .chkrow label{display:inline-flex;align-items:center;font-weight:400;margin-right:1.1rem}
  .chk{width:auto;margin-right:.4rem}
- button.primary{margin-top:1.5rem;background:var(--grad);color:#151515;border:0;
-   padding:.8rem 1.6rem;border-radius:10px;font:700 1rem 'Poppins',sans-serif;cursor:pointer;
-   box-shadow:0 6px 18px rgba(254,143,53,.28);transition:.15s}
+ .switch{display:flex;align-items:center;gap:.6rem;font-weight:600;font-size:.95rem;color:#fff}
+ button.primary{margin-top:1.5rem;background:var(--grad);color:#151515;border:0;padding:.8rem 1.6rem;border-radius:10px;
+   font:700 1rem 'Poppins',sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(254,143,53,.28);transition:.15s}
  button.primary:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(254,143,53,.4)}
  .req:after{content:" *";color:var(--orange)}
  .err{color:#ff8f8f;background:#2a1414;border:1px solid #5b2b2b;padding:.7rem 1rem;border-radius:8px;margin-top:1rem}
  .foot{color:#6f6f6f;font-size:.76rem;margin-top:2rem;text-align:center}
- /* settings modal */
- .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;
-   align-items:flex-start;justify-content:center;padding:6vh 1rem;z-index:20}
+ .overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:flex-start;justify-content:center;padding:6vh 1rem;z-index:20}
  .overlay.open{display:flex}
- .modal{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-   width:100%;max-width:480px;padding:1.4rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+ .modal{background:var(--surface);border:1px solid var(--line);border-radius:16px;width:100%;max-width:480px;padding:1.4rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.5)}
  .modal h2{margin-top:0;border:0;color:var(--text);display:flex;justify-content:space-between;align-items:baseline}
  .modal h2 small{font:400 .72rem 'Inter';color:var(--muted)}
  .actions{display:flex;gap:.6rem;margin-top:1.3rem}
- .actions button{flex:0 0 auto;border-radius:9px;padding:.55rem 1rem;font:600 .9rem 'Inter';cursor:pointer;border:1px solid var(--line);background:var(--surface2);color:var(--text)}
- .actions .save{background:var(--grad);color:#151515;border:0;font-family:'Poppins'}
- .actions .ghost{margin-left:auto;background:transparent}
+ .actions button{border-radius:9px;padding:.55rem 1rem;font:600 .9rem 'Inter';cursor:pointer;border:1px solid var(--line);background:var(--surface2);color:var(--text)}
+ .actions .save{background:var(--grad);color:#151515;border:0;font-family:'Poppins'}.actions .ghost{margin-left:auto;background:transparent}
 </style></head><body>
 <header class="topbar">
   <div class="brand"><img src="/static/webblend-logo.png" alt="Web Blend"><span class="appname">Schema Generator</span></div>
@@ -119,12 +110,20 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <div class="wrap">
 <div class="hero">
   <h1>JSON-LD <span class="accent">Schema Generator</span></h1>
-  <p class="lede">Generate SOP-compliant schema.org structured data for any business.
-  Blank fields are omitted (no placeholder data ships). Output: one
-  <code>.html</code> JSON-LD file per page + <code>sitewide.schema.html</code>, zipped.</p>
+  <p class="lede">Enter a business and domain. Auto-build crawls the site, writes a
+  strategic schema.org profile for every page, and fills logo, socials and
+  descriptions from the site. Output: bare <code>.json</code> JSON-LD, delivered as
+  two zips (site-wide + per-page).</p>
 </div>
 <form method="post" action="/generate">
 <input type="hidden" name="search_url" id="f_search_url">
+<div class="card auto">
+  <label class="switch"><input class="chk" type="checkbox" name="autobuild" id="autobuild" checked> Auto-build schema from the website</label>
+  <p class="hint">Crawls the domain (sitemap or links), builds a WebPage schema per page
+  (+ Person / Service / Article / CollectionPage where detected), and auto-fills any
+  blank Logo / Socials / Descriptions from the site. Turn off to build only the pages
+  you tick below.</p>
+</div>
 <div class="card">
 <h2>Business identity (site-wide)</h2>
 <div class="row"><div><label class="req">Business name</label><input name="name" required></div>
@@ -132,10 +131,10 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <div class="row"><div><label>Industry @type <span class="hint">(Dentist, Restaurant, Store, ProfessionalService…)</span></label><input name="itype" id="f_itype" placeholder="LocalBusiness"></div>
 <div><label>Legal name</label><input name="legal"></div></div>
 <div class="row"><div><label>Phone</label><input name="phone"></div><div><label>Email</label><input name="email"></div></div>
-<label>Short description <span class="hint">(meta-style)</span></label><textarea name="desc"></textarea>
-<label>Second description <span class="hint">(must differ)</span></label><textarea name="disambig"></textarea>
-<label>Logo URL</label><input name="logo">
-<label>Social profile URLs <span class="hint">(one per line or comma-separated; LinkedIn first)</span></label><textarea name="social"></textarea>
+<label>Short description <span class="hint">(meta-style; blank = auto from site)</span></label><textarea name="desc"></textarea>
+<label>Second description <span class="hint">(must differ; blank = auto from site)</span></label><textarea name="disambig"></textarea>
+<label>Logo URL <span class="hint">(blank = auto from site)</span></label><input name="logo">
+<label>Social profile URLs <span class="hint">(blank = auto from site; else one per line / comma-separated)</span></label><textarea name="social"></textarea>
 <label>Service-area cities <span class="hint">(comma / newline separated)</span></label><textarea name="cities"></textarea>
 <div class="row"><div><label>City</label><input name="locality"></div><div><label>State/region</label><input name="region"></div>
 <div><label>Country</label><input name="country" id="f_country" value="US"></div></div>
@@ -150,99 +149,72 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 </div>
 
 <div class="card">
-<h2>Pages</h2>
-<p class="hint">Home is always built. Tick standard pages to include:</p>
+<h2>Manual pages <span class="hint">(used when Auto-build is off)</span></h2>
 <div class="chkrow">
  <label><input class="chk" type="checkbox" name="std" value="about" id="p_about">About</label>
  <label><input class="chk" type="checkbox" name="std" value="contact" id="p_contact">Contact</label>
  <label><input class="chk" type="checkbox" name="std" value="collection" id="p_collection">Shop / Collection</label>
  <label><input class="chk" type="checkbox" name="std" value="faq_home" id="p_faq">FAQ on home</label>
 </div>
-<label>Home FAQ <span class="hint">(only if ticked; one per line as <code>Question | Answer</code>)</span></label>
+<label>Home FAQ <span class="hint">(one per line as <code>Question | Answer</code>)</span></label>
 <textarea name="home_faq" placeholder="Do you ship nationwide? | Yes, across the country."></textarea>
 <label>Advanced — extra pages as JSON <span class="hint">(optional; list of {file,path,nodes,overrides})</span></label>
 <textarea name="pages_json" placeholder="[]"></textarea>
 </div>
-<button class="primary" type="submit">Generate &amp; download ZIP</button>
+<button class="primary" type="submit">Generate &amp; download</button>
 </form>
 {% if error %}<p class="err"><b>Error:</b> {{ error }}</p>{% endif %}
 <p class="foot">Web Blend · Schema Generator — structured data that helps Google understand the business.</p>
 </div>
 
-<div class="overlay" id="overlay">
-  <div class="modal">
+<div class="overlay" id="overlay"><div class="modal">
     <h2>Settings <small>defaults remembered in this browser</small></h2>
     <label>Default industry @type</label><input id="s_itype" placeholder="LocalBusiness">
     <label>Default country</label><input id="s_country" placeholder="US">
     <label>Default site search URL <span class="hint">(uses {search_term_string})</span></label>
     <input id="s_search" placeholder="https://site.com/search?q={search_term_string}">
-    <label>Pages checked by default</label>
+    <label>Manual pages checked by default</label>
     <div class="chkrow">
       <label><input class="chk" type="checkbox" id="s_p_about">About</label>
       <label><input class="chk" type="checkbox" id="s_p_contact">Contact</label>
       <label><input class="chk" type="checkbox" id="s_p_collection">Collection</label>
       <label><input class="chk" type="checkbox" id="s_p_faq">FAQ</label>
     </div>
-    <div class="actions">
-      <button class="save" id="s_save">Save</button>
-      <button id="s_reset">Reset</button>
-      <button class="ghost" id="s_close">Close</button>
-    </div>
-  </div>
-</div>
+    <div class="actions"><button class="save" id="s_save">Save</button>
+      <button id="s_reset">Reset</button><button class="ghost" id="s_close">Close</button></div>
+</div></div>
 
 <script>
-const SK="schemagen_settings_v1";
-const $=s=>document.querySelector(s);
+const SK="schemagen_settings_v1";const $=s=>document.querySelector(s);
 function load(){try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}}
-function apply(){
-  const s=load();
-  if(s.itype) $("#f_itype").value=s.itype;
-  if(s.country) $("#f_country").value=s.country;
-  if(s.search_url!==undefined) $("#f_search_url").value=s.search_url;
-  if(s.pages){
-    $("#p_about").checked=!!s.pages.about;
-    $("#p_contact").checked=!!s.pages.contact;
-    $("#p_collection").checked=!!s.pages.collection;
-    $("#p_faq").checked=!!s.pages.faq;
-  }
-}
-function openModal(){
-  const s=load();
-  $("#s_itype").value=s.itype||"";
-  $("#s_country").value=s.country||"";
-  $("#s_search").value=s.search_url||"";
-  const p=s.pages||{};
-  $("#s_p_about").checked=!!p.about; $("#s_p_contact").checked=!!p.contact;
-  $("#s_p_collection").checked=!!p.collection; $("#s_p_faq").checked=!!p.faq;
-  $("#overlay").classList.add("open");
-}
+function apply(){const s=load();
+  if(s.itype)$("#f_itype").value=s.itype; if(s.country)$("#f_country").value=s.country;
+  if(s.search_url!==undefined)$("#f_search_url").value=s.search_url;
+  if(s.pages){$("#p_about").checked=!!s.pages.about;$("#p_contact").checked=!!s.pages.contact;
+    $("#p_collection").checked=!!s.pages.collection;$("#p_faq").checked=!!s.pages.faq;}}
+function openModal(){const s=load();
+  $("#s_itype").value=s.itype||"";$("#s_country").value=s.country||"";$("#s_search").value=s.search_url||"";
+  const p=s.pages||{};$("#s_p_about").checked=!!p.about;$("#s_p_contact").checked=!!p.contact;
+  $("#s_p_collection").checked=!!p.collection;$("#s_p_faq").checked=!!p.faq;$("#overlay").classList.add("open");}
 function closeModal(){$("#overlay").classList.remove("open")}
-$("#gear").onclick=openModal;
-$("#s_close").onclick=closeModal;
+$("#gear").onclick=openModal;$("#s_close").onclick=closeModal;
 $("#overlay").onclick=e=>{if(e.target===$("#overlay"))closeModal()};
-$("#s_save").onclick=()=>{
-  const s={itype:$("#s_itype").value.trim(),country:$("#s_country").value.trim(),
-    search_url:$("#s_search").value.trim(),
-    pages:{about:$("#s_p_about").checked,contact:$("#s_p_contact").checked,
-      collection:$("#s_p_collection").checked,faq:$("#s_p_faq").checked}};
-  localStorage.setItem(SK,JSON.stringify(s)); apply(); closeModal();
-};
+$("#s_save").onclick=()=>{const s={itype:$("#s_itype").value.trim(),country:$("#s_country").value.trim(),
+  search_url:$("#s_search").value.trim(),pages:{about:$("#s_p_about").checked,contact:$("#s_p_contact").checked,
+  collection:$("#s_p_collection").checked,faq:$("#s_p_faq").checked}};
+  localStorage.setItem(SK,JSON.stringify(s));apply();closeModal();};
 $("#s_reset").onclick=()=>{localStorage.removeItem(SK);
   $("#s_itype").value="";$("#s_country").value="";$("#s_search").value="";
   ["s_p_about","s_p_contact","s_p_collection","s_p_faq"].forEach(i=>$("#"+i).checked=false);
   $("#f_itype").value="";$("#f_country").value="US";$("#f_search_url").value="";
-  ["p_about","p_contact","p_collection","p_faq"].forEach(i=>$("#"+i).checked=false);
-};
+  ["p_about","p_contact","p_collection","p_faq"].forEach(i=>$("#"+i).checked=false);};
 apply();
 </script>
 </body></html>"""
 
 
 def _split(raw):
-    if not raw:
-        return []
-    return [x.strip() for x in re.split(r"[\n,]+", raw) if x.strip()]
+    return [x.strip() for x in re.split(r"[\n,]+", raw or "") if x.strip()]
 
 
 def _slug(text):
@@ -257,6 +229,21 @@ def _faq_lines(raw):
             if q.strip():
                 qa.append((q.strip(), a.strip()))
     return qa
+
+
+def _zip_bytes(files):
+    b = io.BytesIO()
+    with zipfile.ZipFile(b, "w", zipfile.ZIP_DEFLATED) as z:
+        for arc, path in files:
+            z.write(path, arcname=arc)
+    b.seek(0)
+    return b.read()
+
+
+# crawl page-type hint -> (extra node, webpage @type override)
+_NODE = {"person": ("person", None), "service": ("service", None),
+         "article": ("article", None), "collection": (None, "CollectionPage"),
+         "product": (None, "CollectionPage")}
 
 
 @app.route("/")
@@ -283,32 +270,71 @@ def generate():
     data["cities"] = _split(f.get("cities"))
     data["keywords"] = _split(f.get("keywords"))
     data["licenses"] = _split(f.get("licenses"))
-
+    biz = data["name"]
     base_url = core.base_url(data["domain"])
     today = datetime.date.today().strftime("%Y/%m/%d")
-    biz = data["name"]
-    sw = identity.sitewide_overrides(data)
+    area = data["cities"][0] if data["cities"] else data["locality"]
+    auto = bool(f.get("autobuild"))
 
+    site = None
+    if auto:
+        try:
+            site = crawl.crawl(data["domain"],
+                               max_pages=int(os.environ.get("CRAWL_MAX", "25")))
+        except Exception as e:
+            return render_template_string(FORM, error=f"Crawl failed: {e}")
+        if not site or not site["pages"]:
+            return render_template_string(
+                FORM, error="Couldn't crawl that domain (no reachable pages). "
+                            "Check the URL, or turn off Auto-build and add pages manually.")
+        a = site["assets"]
+        if not data["logo"] and a.get("logo"):
+            data["logo"] = a["logo"]
+        if not data["social"] and a.get("social"):
+            data["social"] = a["social"]
+        if not data["desc"] or not data["disambig"]:
+            d1, d2 = describe.describe(site["pages"][0], biz, area)
+            data["desc"] = data["desc"] or d1
+            data["disambig"] = data["disambig"] or d2
+
+    sw = identity.sitewide_overrides(data)
+    pages = []
     std = set(f.getlist("std"))
     home_faq = _faq_lines(f.get("home_faq")) if "faq_home" in std else None
-    pages = [identity.page_pack(base_url, "home", "/", biz, data["desc"],
-                                data["disambig"], today, faq=home_faq,
-                                crumbs=[("Home", base_url + "/")])]
+    pages.append(identity.page_pack(base_url, "home", "/", biz, data["desc"],
+                                    data["disambig"], today, faq=home_faq,
+                                    crumbs=[("Home", base_url + "/")]))
 
-    if "collection" in std:
-        pages.append(identity.page_pack(
-            base_url, "collection", "/shop", f"Shop {biz}",
-            data["desc"], data["disambig"], today,
-            crumbs=[("Home", base_url + "/"), ("Shop", base_url + "/shop")]))
-    if "about" in std:
-        pages.append(identity.page_pack(
-            base_url, "about", "/about", f"About {biz}", data["desc"],
-            data["disambig"], today, node="person", owner=data["owner"],
-            social=data["social"]))
-    if "contact" in std:
-        pages.append(identity.page_pack(
-            base_url, "contact", "/contact", f"Contact {biz}", data["desc"],
-            data["disambig"], today))
+    if auto:
+        used = {"home", "sitewide"}
+        for m in site["pages"]:
+            path = urlparse(m["url"]).path or "/"
+            if path == "/":
+                continue
+            node, wp_type = _NODE.get(crawl.page_node_type(m["url"]), (None, None))
+            title = (m.get("title") or path.strip("/").replace("-", " ").title())[:70] or "Page"
+            d1, d2 = describe.describe(m, biz, area)
+            file = _slug(path)
+            while file in used:
+                file += "-x"
+            used.add(file)
+            pages.append(identity.page_pack(
+                base_url, file, path, title, d1, d2, today, node=node,
+                owner=data["owner"], social=data["social"],
+                crumbs=[("Home", base_url + "/"), (title, base_url + path)],
+                wp_type=wp_type))
+    else:
+        if "collection" in std:
+            pages.append(identity.page_pack(base_url, "collection", "/shop", f"Shop {biz}",
+                data["desc"], data["disambig"], today,
+                crumbs=[("Home", base_url + "/"), ("Shop", base_url + "/shop")]))
+        if "about" in std:
+            pages.append(identity.page_pack(base_url, "about", "/about", f"About {biz}",
+                data["desc"], data["disambig"], today, node="person",
+                owner=data["owner"], social=data["social"]))
+        if "contact" in std:
+            pages.append(identity.page_pack(base_url, "contact", "/contact", f"Contact {biz}",
+                data["desc"], data["disambig"], today))
 
     try:
         extra = json.loads(f.get("pages_json") or "[]")
@@ -320,18 +346,23 @@ def generate():
     config = {"project": biz, "domain": data["domain"],
               "sitewide": {"overrides": sw}, "pages": pages}
 
+    slug = _slug(biz)
     with tempfile.TemporaryDirectory() as tmp:
         try:
             written = project.generate(config, base=tmp)
         except Exception as e:
             return render_template_string(FORM, error=f"{type(e).__name__}: {e}")
-        buf = io.BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-            for p in written:
-                z.write(p, arcname=os.path.join(biz, os.path.basename(p)))
-        buf.seek(0)
-    return send_file(buf, mimetype="application/zip", as_attachment=True,
-                     download_name=f"{_slug(biz)}-schema.zip")
+        site_files = [p for p in written if os.path.basename(p) == "sitewide.json"]
+        page_files = [p for p in written if os.path.basename(p) != "sitewide.json"]
+        sitewide_zip = _zip_bytes([(os.path.basename(p), p) for p in site_files])
+        pages_zip = _zip_bytes([(os.path.basename(p), p) for p in page_files])
+        outer = io.BytesIO()
+        with zipfile.ZipFile(outer, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr(f"{slug}-sitewide.zip", sitewide_zip)
+            z.writestr(f"{slug}-pages.zip", pages_zip)
+        outer.seek(0)
+    return send_file(outer, mimetype="application/zip", as_attachment=True,
+                     download_name=f"{slug}-schema.zip")
 
 
 if __name__ == "__main__":

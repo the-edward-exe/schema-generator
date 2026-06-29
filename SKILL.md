@@ -31,9 +31,9 @@ Always write generated files to:
 
 ```
 Customer outputs/<Business Name>/
-    sitewide.schema.html      # Organization + LocalBusiness + WebSite (header, every page)
-    home.schema.html          # WebPage + Breadcrumb (+ page node) per page
-    <page>.schema.html        # one file per page
+    sitewide.json      # Organization + LocalBusiness + WebSite (header, every page)
+    home.json          # WebPage + Breadcrumb (+ page node) per page
+    <page>.json        # one file per page
 ```
 
 `schemagen.project.generate(config, base=".")` does this for you (see Workflow).
@@ -47,7 +47,7 @@ python -m schemagen project                           # guided wizard (easiest)
 python -m schemagen list                              # the 15 types
 python -m schemagen build organization --domain acme.com --set name="Acme Co"
 python -m schemagen build localbusiness --domain acme.com --set @type=Dentist
-python -m schemagen graph --domain acme.com --strict -o sitewide.schema.html
+python -m schemagen graph --domain acme.com --strict -o sitewide.json
 ```
 
 **`project`** is the interactive wizard: it asks for the business once and for

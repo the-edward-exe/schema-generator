@@ -118,13 +118,20 @@ def sitewide_overrides(data):
 
 
 def page_pack(base_url, file, path, headline, primary, secondary, today,
-              node=None, owner="", social=None, faq=None, crumbs=None):
-    """Build one page spec dict {file, path, nodes, overrides}."""
+              node=None, owner="", social=None, faq=None, crumbs=None, wp_type=None):
+    """Build one page spec dict {file, path, nodes, overrides}.
+
+    node: extra schema node for the page — "service", "person", or "article".
+    wp_type: override the WebPage @type (e.g. "CollectionPage").
+    """
     o = {}
+    org_id = f"{base_url}/#organization"
     _put(o, "webpage.headline", headline)
     _put(o, "webpage.description", primary)
     _put(o, "webpage.disambiguatingDescription", secondary)
     o["webpage.lastReviewed"] = today
+    if wp_type:
+        o["webpage.@type"] = wp_type
     for gone in ("about", "mentions", "relatedLink", "sameAs", "significantLink"):
         o["webpage." + gone] = D
 
@@ -155,6 +162,19 @@ def page_pack(base_url, file, path, headline, primary, secondary, today,
                      "nationality", "callSign", "award", "memberOf", "address",
                      "gender", "image", "knowAbout"):
             o[f"person.{gone}"] = D
+    elif node == "article":
+        nodes.append("article")
+        _put(o, "article.headline", headline)
+        _put(o, "article.description", primary)
+        _put(o, "article.disambiguatingDescription", secondary)
+        o["article.url"] = base_url + path
+        o["article.author"] = {"@type": "Person", "name": owner} if owner else {"@id": org_id}
+        o["article.publisher"] = {"@id": org_id}
+        for gone in ("dateCreated", "datePublished", "dateModified", "commentCount",
+                     "alternativeHeadline", "award", "editor", "genre", "wordcount",
+                     "keywords", "potentialAction", "articleBody", "backstory",
+                     "abstract", "text", "citation", "image"):
+            o[f"article.{gone}"] = D
     if faq:
         nodes.append("faqpage")
         o["faqpage.mainEntity"] = project.questions(faq)
