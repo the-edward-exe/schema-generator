@@ -77,6 +77,8 @@ The browser shows a native login prompt; comparison is constant-time
 
 ## Notes
 
+- The live app uses the **GitHub integration** (`deploy_on_push: true`), so every
+  push to `main` auto-deploys — no manual `create-deployment` needed.
 - For stronger protection you can still layer App Platform trusted sources / a VPN
   on top of basic auth.
 - The app writes only to a temp dir per request and streams the ZIP back —
