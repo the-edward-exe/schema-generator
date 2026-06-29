@@ -1,0 +1,77 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Recipe",
+  "author": "Jake  Smith",
+  "cookTime": "PT2H",
+  "datePublished": "2015-05-18",
+  "description": "Your recipe description goes here",
+  "keywords": "cookies, chocolate chip, peanut butter",
+  "teaches": "how to make chocolate and peanut butter cookies",
+  "disambiguatingDescription": "These are the best cookies on the planet so learn how to make chocolate and peanut butter cookies",
+  "sameAs": "https://www.marthasteward.com/cookies",
+  "image": "http://www.example.com/images.jpg",
+  "recipeIngredient": [
+    "ingredient 1",
+    "ingredient 2",
+    "ingredient 3",
+    "ingredient 4",
+    "ingredient 5"
+  ],
+  "interactionStatistic": {
+    "@type": "InteractionCounter",
+    "interactionType": "http://schema.org/Comment",
+    "userInteractionCount": "5"
+  },
+  "name": "Rand's Cookies",
+  "nutrition": {
+    "@type": "NutritionInformation",
+    "calories": "1200 calories",
+    "carbohydrateContent": "12 carbs",
+    "proteinContent": "9 grams of protein",
+    "fatContent": "9 grams fat"
+  },
+  "prepTime": "PT15M",
+  "recipeInstructions": "This is the long part, etc.",
+  "recipeYield": "12 cookies",
+  "step": [
+    {
+      "@type": "HowToSection",
+      "name": "Preparation",
+      "position": "1",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "position": "1",
+          "itemListElement": [
+            {
+              "@type": "HowToDirection",
+              "position": "1",
+              "text": "Turn on your hazard lights and set the flares."
+            },
+            {
+              "@type": "HowToTip",
+              "position": "2",
+              "text": "You're going to need space and want to be visible."
+            }
+          ]
+        },
+        {
+          "@type": "HowToStep",
+          "position": "2",
+          "itemListElement": [
+            {
+              "@type": "HowToDirection",
+              "position": "1",
+              "text": "Position your wheel wedges in front of the front tires if a rear tire is flat, or behind the rear tires if a front tire is flat"
+            },
+            {
+              "@type": "HowToTip",
+              "position": "2",
+              "text": "You don't want the car to move while you're working on it."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

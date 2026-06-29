@@ -1,0 +1,155 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Example Business",
+  "legalName": "Example Business LLC",
+  "url": "http://www.example.com",
+  "logo": "http://cdn.example.com/assets/logo.png",
+  "description": "At Example Business, we provide full-service re-service and repairs to homeowners and building owners throughout the region. Licensed and bonded, our service providers combine the latest technology, highest quality materials, and most advanced techniques with decades of industry-leading, client-recommended service.",
+  "disambiguatingDescription": "Whether you need a new project, project maintenance, or repairs in Springfield or Anytown for a tile, product, product, foam, or modified project, you can rely on our team of professionals. We also are proud to provide energy-efficient green projects to help you save money while going green. Whatever the service project, we deliver top quality craftsmanship and results with integrity. We are committed to relationships with clients that are based on mutual trust and respect. Contact us today to learn more about the Example Business and our high-quality professional services.",
+  "mainEntityOfPage": "https://en.wikipedia.org/wiki/Tradesperson",
+  "foundingDate": "2009",
+  "foundingLocation": [
+    {
+      "@type": "Place",
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "33.4485278",
+        "longitude": "-112.066209"
+      },
+      "name": "Example Landmark"
+    }
+  ],
+  "actionableFeedbackPolicy": "http://example.com/newsroom",
+  "areaServed": [
+    "Anytown, ST",
+    "Springfield, ST",
+    "Riverside, ST",
+    "Fairview, ST",
+    "Lakeside, ST"
+  ],
+  "award": [
+    "2020 Best In Anytown service providers",
+    "2020 Best In Anytown professional service",
+    "2020 Best In Anytown quality material",
+    "2020 Best In Anytown local specialists",
+    "2020 Best In Anytown replacement service",
+    "2020 Best In Anytown new service",
+    "2020 Best In Anytown flat specialists",
+    "2020 Best In Anytown residential specialist",
+    "2020 Best In Anytown licensed specialist",
+    "2020 Best In Anytown commercial specialist",
+    "2020 Best In Anytown commercial service providers",
+    "2020 Best In Anytown local service companies",
+    "2020 Best In Anytown tile repair",
+    "2020 Best In Anytown construction service",
+    "2020 Best In Anytown maintenance",
+    "2020 Best In Anytown foam project",
+    "2020 Best In Anytown local service providers",
+    "2020 Best In Anytown commercial service repair",
+    "2020 Best In Anytown premium products service",
+    "2020 Best In Anytown best specialists",
+    "2020 Best In Anytown financing",
+    "2020 Best In Anytown specialists Anytown",
+    "2020 Best In Anytown tile specialists",
+    "2020 Best In Anytown product specialists",
+    "2020 Best In Anytown inspection",
+    "2020 Best In Anytown concrete tile service",
+    "2020 Best In Anytown cement tile project",
+    "2020 Best In Anytown valley service",
+    "2020 Best In Anytown mobile home specialists",
+    "2020 Best In Anytown emergency repair",
+    "2020 Best In Anytown service companies near me",
+    "2020 Best In Anytown specialists company",
+    "2020 Best In Anytown building service",
+    "2020 Best In Anytown best service company",
+    "2020 Best In Anytown repair solutions",
+    "2020 Best In Anytown specialist near me",
+    "2020 Best In Anytown replacement near me",
+    "2020 Best In Anytown service providers near me",
+    "2020 Best In Anytown specialists repair",
+    "2020 Best In Anytown commercial service company",
+    "2020 Best In Anytown house specialists",
+    "2020 Best In Anytown best project companies near me",
+    "2020 Best In Anytown repairs near me",
+    "2020 Best In Anytown best specialist near me",
+    "2020 Best In Anytown commercial specialist near me",
+    "2020 Best In Anytown clay specialist",
+    "2020 Best In Anytown leaky repair near me",
+    "2020 Best In Anytown repairs costs",
+    "2020 Best In Anytown designer projects",
+    "2020 Best In Anytown repairing fixtures"
+  ],
+  "brand": [
+    "Owens Corning project product",
+    "Gibraltar Building Products Corrugated Galvanized Steel 29-Gauge project Panels",
+    "Boral project Tile Components",
+    "Stone-coated premium service"
+  ],
+  "knowsAbout": [
+    "service specialists",
+    "certified specialist",
+    "flat replacement cost",
+    "industrial specialists",
+    "service experts",
+    "free project inspection",
+    "service company Anytown",
+    "leaky fixture",
+    "emergency specialist",
+    "repair company",
+    "a specialist",
+    "repair services",
+    "different types of projects materials",
+    "commercial service companies near me",
+    "repair companies near me",
+    "local service companies near me",
+    "reputable service providers near me",
+    "ST project",
+    "project workers",
+    "service provider in my area",
+    "specialists in sale",
+    "the service company",
+    "service companies financing",
+    "cost for project inspection",
+    "service lifespan"
+  ],
+  "founders": [
+    {
+      "@type": "Person",
+      "name": "Jane Doe"
+    },
+    {
+      "@type": "Person",
+      "name": "John Smith"
+    }
+  ],
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "900 Linton Blvd Suite 104",
+    "addressLocality": "Anytown",
+    "addressRegion": "ST",
+    "postalCode": "85369",
+    "addressCountry": "USA"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "telephone": "[+561-526-8457]",
+    "availableLanguage": [
+      "Spansish",
+      "ASL"
+    ],
+    "email": "info@example-business.com"
+  },
+  "sameAs": [
+    "http://www.facebook.com/examplebusiness",
+    "http://www.twitter.com/examplebusiness",
+    "http://pinterest.com/examplebusiness/",
+    "http://examplebusiness.tumblr.com/",
+    "https://blog.example.org",
+    "https://news.example.org",
+    "http://www.linkedin.com/company/example-business",
+    "https://www.instagram.com/examplelogo",
+    "https://www.youtube.com/106661773120082093538"
+  ]
+}

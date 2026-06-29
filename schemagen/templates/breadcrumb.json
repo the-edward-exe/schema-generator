@@ -1,0 +1,42 @@
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "numberOfItems": "4",
+  "description": "Your project is important and deserves professional attention. To schedule professional services in Anytown, contact the service provider Example Business  for quality craftsmanship, affordable service, and guaranteed results. We work with the top quality materials in the country and are proud to call Anytown our home.",
+  "disambiguatingDescription": "Your project is critical and should be carefully looked after. Contact service provider Example Business for high quality production, inexpensive service and assured performance to schedule professional services in Anytown. We work with the country's top quality materials and are proud to call Anytown home.",
+  "mainEntityOfPage": "https://example.com/",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "item": {
+        "@id": "https://example.com/project-repair",
+        "name": "repair"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "item": {
+        "@id": "https://example.com/project-replacement",
+        "name": "replacement"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "item": {
+        "@id": "https://example.com/cement-tile",
+        "name": "Cement Tile replacement"
+      }
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "item": {
+        "@id": "https://example.com/product-project",
+        "name": "product replacement"
+      }
+    }
+  ]
+}

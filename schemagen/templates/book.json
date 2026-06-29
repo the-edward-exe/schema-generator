@@ -1,0 +1,39 @@
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "breadcrumb": "Book > Woodworking > Plans",
+  "mainEntity": {
+    "@type": "Book",
+    "author": "http://www.example.com/author.html",
+    "bookFormat": "http://schema.org/EBook",
+    "datePublished": "2015-05-01",
+    "image": "coverImage.jpg",
+    "inLanguage": "English",
+    "isbn": "00000000",
+    "name": "The Title of Book",
+    "url": "https://www.abebooks.com/Woodworking-Complete-Step-by-step-Guide-Skills-Techniques/9031357375/bd",
+    "description": "From setting up a workshop to the principles of good design, how-to-use tools and essential techniques, you will find the expert guidance and clear instruction you need to become a master woodworker.",
+    "disambiguatingDescription": "This comprehensive and complete book presents: choosing wood measuring marking and layout cutting joinery drilling shaping clamping gluing fastening finishing and more, plus more than 40 home furnishings and accessory projects to make and display over 1000 photos, illustrations and diagrams.",
+    "sameas": "https://www.amazon.com/Woodworking-Complete-Step-step-Techniques/dp/189062179X",
+    "headline": "Woodworking: The Complete Step-by-step Guide To Skills",
+    "alternativeHeadline": "The Complete Step-by-step Guide To Woodworking Skills, Techniques, 41 Projects",
+    "genre": "How To",
+    "award": "Great book for those wood crafters and wood working hobbyists",
+    "citation": "https://www.abebooks.com/",
+    "abstract": "From setting up a workshop to the principles of good design, how-to-use tools and essential techniques, you will find the expert guidance and clear instruction you need to become a master woodworker. This comprehensive and complete book presents: choosing wood measuring marking and layout cutting joinery drilling shaping clamping gluing fastening finishing and more, plus more than 40 home furnishings and accessory projects to make and display over 1000 photos, illustrations and diagrams.",
+    "bookEdition": "First",
+    "numberOfPages": "1234",
+    "offers": {
+      "@type": "Offer",
+      "availability": "http://schema.org/InStock",
+      "price": "9.99",
+      "priceCurrency": "USD"
+    },
+    "publisher": "O'Json Publishing",
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4",
+      "reviewCount": "12"
+    }
+  }
+}

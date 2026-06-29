@@ -1,0 +1,15 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "http://www.example.com/#faqpage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Replace with the question shown on the page",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Replace with the answer shown on the page."
+      }
+    }
+  ]
+}

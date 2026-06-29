@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.scratch*/
+Customer outputs/
+/build_*.py
+
+# Provenance / regeneration source — kept locally, not committed or deployed.
+# (The neutral schemagen/templates/ are committed; these are only needed to
+# regenerate them via tools/, and the PDFs are internal methodology docs.)
+Schema Templates/
+tech-supporting-documents/

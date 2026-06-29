@@ -1,0 +1,55 @@
+{
+  "@context": "http://schema.org",
+  "@type": "Product",
+  "@id": "https://www.example.com/#product",
+  "brand": "Example Business Anytown service provider",
+  "url": "https://www.example.com/",
+  "award": "Best in 2020 Anytown service provider",
+  "slogan": "Example Business #1 Anytown service provider serving your Valley needs",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "3.5",
+    "reviewCount": "11"
+  },
+  "description": "premium products are a hybrid of sawn products and hand-split products. Like a product, both faces are sawn, as are the edges, giving the premium product a uniform appearance. Thicker than products, premium products have a heavier shadow line on the project or wall. Features: 100% Edge Grain 5 Bundles Per Square at a 10inch Exposure Certified Lifetime Limited Warranty From Manufacturer",
+  "name": "24 X 5 8 Western Red composite Premium Premium Grade premium products",
+  "sku": "1175647",
+  "material": "composite",
+  "image": "https://www.example.com/g/ApGdbnIA9p/285505a1559434eb8e4c6caf13970172.jpg",
+  "offers": {
+    "@type": "Offer",
+    "@id": "https://www.example.com/#product",
+    "availability": "http://schema.org/InStock",
+    "price": "204.99",
+    "priceValidUntil": "2020-12-31",
+    "priceCurrency": "USD"
+  },
+  "review": [
+    {
+      "@type": "Review",
+      "author": "Ellie",
+      "datePublished": "2011-04-01",
+      "description": "For the price and grade stated (D) these were quite good. I bought 2 bundles. 80% were usable for a not-too-demanding siding exposure. That percentage for would drop a lot if you were thinking to project with them. Get 'A' products if that is your goal. Even so there were some (≈15%) clear or nearly clear pieces that were good enough for an acceptable small repair. Crafters will find lots of material to work with here for non-structural projects. Nice not to have to buy a full square of products, which are very hard to find here in ST. ",
+      "name": "Not a happy camper",
+      "reviewRating": {
+        "@type": "Rating",
+        "bestRating": "5",
+        "ratingValue": "5",
+        "worstRating": "1"
+      }
+    },
+    {
+      "@type": "Review",
+      "author": "Lucas",
+      "datePublished": "2011-03-25",
+      "description": "I had to throw away approximately 50 percent of the products. A large portion was rotten, broken or full of holes. I ended up going to Lowe’s and buying first quality products at twice the price and my cost worked out to be the same because of all of the damaged or rotten products that I had to throw away ",
+      "name": "Value purchase",
+      "reviewRating": {
+        "@type": "Rating",
+        "bestRating": "5",
+        "ratingValue": "1",
+        "worstRating": "1"
+      }
+    }
+  ]
+}

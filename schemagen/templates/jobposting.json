@@ -1,0 +1,42 @@
+{
+  "@context": "http://schema.org",
+  "@type": "JobPosting",
+  "@id": "https://example.com/#webpage",
+  "name": "SEO Software Engineer",
+  "url": "https://example.com/jobs/software-engineer",
+  "baseSalary": "100000",
+  "jobBenefits": "Medical, Life, Dental",
+  "datePosted": "2011-10-31",
+  "jobStartDate": "2012-01-15",
+  "occupationalCategory": "15-1132.00 Software Developers, Application",
+  "description": "Description: ABC Company Inc. seeks a full-time mid-level software engineer to develop in-house tools.",
+  "disambiguatingDescription": "Looking for a full-time engineer to develop software for in-house use in order to solve issues with productivity by identifiying repeated tasks SEO and digital marketing teams are employing and automate them.",
+  "sameAs": [
+    "https://en.wikipedia.org/wiki/Software_engineer",
+    "https://en.wikipedia.org/wiki/Programmer",
+    "https://en.wikipedia.org/wiki/Computer_scientist"
+  ],
+  "image": "https://cdn.pixabay.com/photo/2019/12/12/11/40/engineer-4690505_1280.jpg",
+  "employerOverview": "ABC Company is digital marketing agency focused on SEO, Web Design, and PPC management for small to medium sized businesses in the state of the region",
+  "employmentType": "Full-time",
+  "physicalRequirement": "Light lifting, walking, standing, occational dancing",
+  "educationRequirements": "Bachelor's Degree in Computer Science, Information Systems or related fields of study.",
+  "experienceRequirements": "Minumum 3 years experience as a software engineer",
+  "incentiveCompensation": "Performance-based annual bonus plan, project-completion bonuses",
+  "industry": "Computer Software",
+  "jobLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Kirkland",
+      "addressRegion": "WA"
+    }
+  },
+  "qualifications": "Ability to work in a team environment with members of varying skill levels. Highly motivated. Learns quickly.",
+  "responsibilities": "Design and write specifications for tools for in-house customers Build tools according to specifications",
+  "salaryCurrency": "USD",
+  "skills": "Web application development using Java/J2EE Web application development using Python or familiarity with dynamic programming languages",
+  "specialCommitments": "VeteranCommit",
+  "title": "Software Engineer",
+  "workHours": "40 hours per week"
+}

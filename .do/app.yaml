@@ -1,0 +1,29 @@
+# DigitalOcean App Platform spec. Either let the UI auto-detect the Procfile,
+# or use this with: doctl apps create --spec .do/app.yaml
+name: schema-generator
+region: nyc
+services:
+  - name: web
+    environment_slug: python
+    instance_size_slug: basic-xxs        # smallest paid; or apps-s-1vcpu-0.5gb
+    instance_count: 1
+    http_port: 8080
+    run_command: gunicorn --workers 2 --bind 0.0.0.0:8080 webapp.app:app
+    github:
+      repo: YOUR_GH_USER/schema-generator   # <-- set to your repo
+      branch: main
+      deploy_on_push: true
+    health_check:
+      http_path: /healthz
+    routes:
+      - path: /
+    envs:
+      # HTTP basic auth — set these (mark as encrypted SECRET in the UI/spec).
+      # Leave unset to run open (not recommended once public).
+      - key: AUTH_USER
+        scope: RUN_TIME
+        value: admin
+      - key: AUTH_PASS
+        scope: RUN_TIME
+        type: SECRET
+        value: CHANGE_ME

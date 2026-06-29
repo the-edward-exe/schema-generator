@@ -1,0 +1,276 @@
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": "http://www.example.com#webpage",
+  "headline": "As an industry leader, the Example Team sets the standard of excellence in service. We are dedicated to providing peace of mind to our customers, employees, and community. We do this by delivering quality workmanship, continuing our education, and creating a safe work environment.",
+  "url": "http://www.example.com",
+  "lastReviewed": "2020/07/14",
+  "relatedLink": [
+    "https://www.wikidata.org/wiki/Q361132",
+    "https://www.wikidata.org/wiki/Q30054116",
+    "https://www.wikidata.org/wiki/Q27057193",
+    "https://en.wikipedia.org/wiki/Tradesperson",
+    "https://en.wikipedia.org/wiki/Service_economics"
+  ],
+  "significantLink": "https://www.example.com/contact-us/",
+  "description": "Since 1993, Springfield and Anytown specialists at Example Business have set the standard in re-service and repairs, winning awards from Angies List and BBB. Call today!",
+  "disambiguatingDescription": "Since 1993, Example Business has become the norm for re-service and repairing by Springfield and Anytown service, receiving recognition from the Angie 's List and BBB. Call today! Call today!",
+  "mainEntityOfPage": "http://www.example.com",
+  "sameAs": [
+    "https://en.wikipedia.org/wiki/Trade_association"
+  ],
+  "about": [
+    {
+      "@type": "thing",
+      "name": "project",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    },
+    {
+      "@type": "thing",
+      "name": "Anytown",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "Anytown, ST",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    },
+    {
+      "@type": "thing",
+      "name": "metal",
+      "sameAs": "http://en.wikipedia.org/wiki/Material"
+    },
+    {
+      "@type": "thing",
+      "name": "the region",
+      "sameAs": "http://en.wikipedia.org/wiki/Region"
+    },
+    {
+      "@type": "thing",
+      "name": "specialists",
+      "sameAs": "http://en.wikipedia.org/wiki/Tradesperson"
+    },
+    {
+      "@type": "thing",
+      "name": "bbb",
+      "sameAs": "http://en.wikipedia.org/wiki/Better_Business_Bureau"
+    },
+    {
+      "@type": "thing",
+      "name": "foam",
+      "sameAs": "http://en.wikipedia.org/wiki/Material"
+    },
+    {
+      "@type": "thing",
+      "name": "tile",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "customer",
+      "sameAs": "http://en.wikipedia.org/wiki/Customer"
+    },
+    {
+      "@type": "thing",
+      "name": "Springfield",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "clients",
+      "sameAs": "http://en.wikipedia.org/wiki/Customer"
+    },
+    {
+      "@type": "thing",
+      "name": "Lakeside",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "solutions",
+      "sameAs": "http://en.wikipedia.org/wiki/Solution"
+    },
+    {
+      "@type": "thing",
+      "name": "product",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "price",
+      "sameAs": "http://en.wikipedia.org/wiki/Price"
+    },
+    {
+      "@type": "thing",
+      "name": "Riverside, ST",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "Lakeside",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "pride",
+      "sameAs": "http://en.wikipedia.org/wiki/Pride"
+    },
+    {
+      "@type": "thing",
+      "name": "products",
+      "sameAs": "http://en.wikipedia.org/wiki/Material"
+    },
+    {
+      "@type": "thing",
+      "name": "Fairview",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "Fairview",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "Fairview, ST",
+      "sameAs": "http://en.wikipedia.org/wiki/City"
+    },
+    {
+      "@type": "thing",
+      "name": "inspection",
+      "sameAs": "http://en.wikipedia.org/wiki/Inspection"
+    },
+    {
+      "@type": "thing",
+      "name": "asphalt",
+      "sameAs": "http://en.wikipedia.org/wiki/Material"
+    }
+  ],
+  "mentions": [
+    {
+      "@type": "thing",
+      "name": "flat project",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "flat projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "flat projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "project",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    },
+    {
+      "@type": "thing",
+      "name": "metal projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "projects products",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "product project",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "specialist",
+      "sameAs": "http://en.wikipedia.org/wiki/Tradesperson"
+    },
+    {
+      "@type": "thing",
+      "name": "project",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    },
+    {
+      "@type": "thing",
+      "name": "product projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    },
+    {
+      "@type": "thing",
+      "name": "metal project",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "premium service",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    },
+    {
+      "@type": "thing",
+      "name": "the metro area",
+      "sameAs": "http://en.wikipedia.org/wiki/Metropolitan_area"
+    },
+    {
+      "@type": "thing",
+      "name": "the metro area",
+      "sameAs": "http://en.wikipedia.org/wiki/Metropolitan_area"
+    },
+    {
+      "@type": "thing",
+      "name": "Anytown area",
+      "sameAs": "http://en.wikipedia.org/wiki/Metropolitan_area"
+    },
+    {
+      "@type": "thing",
+      "name": "projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    },
+    {
+      "@type": "thing",
+      "name": "scrap",
+      "sameAs": "http://en.wikipedia.org/wiki/Scrap"
+    },
+    {
+      "@type": "thing",
+      "name": "products",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "asphalt products",
+      "sameAs": "http://en.wikipedia.org/wiki/Product_(business)"
+    },
+    {
+      "@type": "thing",
+      "name": "homeowners",
+      "sameAs": "http://en.wikipedia.org/wiki/Home_insurance"
+    },
+    {
+      "@type": "thing",
+      "name": "projects",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    },
+    {
+      "@type": "thing",
+      "name": "project",
+      "sameAs": "http://en.wikipedia.org/wiki/Service_(economics)"
+    }
+  ]
+}

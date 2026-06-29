@@ -1,0 +1,58 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "@id": "http://www.example.com/#article",
+  "headline": "Extra! Extra! Read alla bout it",
+  "dateCreated": "2015-09-20",
+  "datePublished": "2020-07-15T12:30:23+00:00",
+  "dateModified": "2020-07-15T12:36:40+00:00",
+  "mainEntityOfPage": "http://www.example.com/",
+  "commentCount": 0,
+  "alternativeHeadline": "This article is also about robots and stuff",
+  "author": "Jane Doe",
+  "award": "Best service provider in Anytown",
+  "editor": "Alex Roe",
+  "genre": "service",
+  "wordcount": "1120",
+  "publisher": {
+    "@type": "Organization",
+    "@id": "https://www.example.com/#organization",
+    "name": "Example Business",
+    "logo": {
+      "@type": "ImageObject",
+      "@id": "https://www.example.com/#logo",
+      "inLanguage": "en-US",
+      "url": "https://www.example.com/assets/Example-Logo-Icon-120x120.png",
+      "width": 120,
+      "height": 120,
+      "caption": "Example Business"
+    }
+  },
+  "image": {
+    "@type": "ImageObject",
+    "@id": "https://www.example.com/ecommerce-blog-ideas/#primaryimage",
+    "inLanguage": "en-US",
+    "url": "https://secure.gravatar.com/avatar/1d83533e299c379140f9fcc2cb0015cb?s=96&d=mm&r=g",
+    "caption": "Jane Doe working on a replacement in Anytown"
+  },
+  "keywords": "project,service,specialists,service provider,Anytown service provider, specialist in Anytown, service Anytown",
+  "inLanguage": "en-US",
+  "potentialAction": {
+    "@type": "CommentAction",
+    "name": "Comment",
+    "target": [
+      "https://www.example.com/ecommerce-blog-ideas/#respond"
+    ]
+  },
+  "url": "http://www.example.com",
+  "description": "As a homeowner, putting a new project on your home is one of the biggest investments you will make and it’s a very important decision. There are hundreds of service providers in Anytown to choose from, and working with the best service provider Anytown has to offer will give you peace of mind in knowing that you will get the best quality project that fits your budget.",
+  "articleBody": "You can paste your entire post in here, and yes it can get really really long.",
+  "backstory": "Example Business was founded by Joe and his brother Bob who learned how to project from their father and monther who lived and worked in the Anytown area for over 50 years before they retired in 2020.",
+  "abstract": "Example Business, a service provider in Anytown has created an peice on how to pick the right quality material to use on your Anytown home.",
+  "text": "We have the knowledge to guide you and help you through the service process so that you get the project you want and a project that will last! From explaining the components of a project, to helping you choose the right type of project for your house, we will be there to assist you every step of the way.",
+  "citation": [
+    "https://en.wikipedia.org/wiki/Trade_association",
+    "https://www.example.org/"
+  ],
+  "disambiguatingDescription": "Over the years the owner has grown Example Business service into a multimillion-dollar service company in Anytown and has built a reputation on his honesty, integrity and love for the the greater metro area community. Whether it’s a small repair job or a large multi-unit commercial job, you’ll find that the owner’s motto “Do a great job at a fair price” is the foundation of how all Jane Doe’s service employee’s conduct business."
+}

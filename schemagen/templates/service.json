@@ -1,0 +1,95 @@
+{
+  "@context": "http://schema.org/",
+  "@type": "Service",
+  "serviceType": [
+    "service provider",
+    "residential service Contractor",
+    "commercial service Contractor"
+  ],
+  "name": "Example Business Contractor Anytown",
+  "additionalType": "provider",
+  "alternateName": "Example Business Super Duper service Anytown",
+  "description": "Example Business helps people solve their service needs. Since 1934, Anytown has been influenced by Jane Does service as we have built a reputation for quality, integrity and customer care that sets us apart from any other Anytown service company.",
+  "disambiguatingDescription": "Work Bob's service helps to fix people's service needs. Since 1934 Jane Does service has dominated Anytown because we have a reputation for efficiency, honesty and customer service that separates us from any other Anytown service company.",
+  "mainEntityOfPage": "http://www.example.com",
+  "sameAs": [
+    "http://www.productontology.org/id/Service_economics",
+    "http://www.productontology.org/id/specialist"
+  ],
+  "provider": {
+    "@type": "LocalBusiness",
+    "name": "Example Business Anytown service",
+    "image": "https://www.example.com/g/ApGdbnIA9p/285505a1559434eb8e4c6caf13970172.jpg"
+  },
+  "areaServed": {
+    "@type": "City",
+    "name": "Anytown"
+  },
+  "award": "Best Anytown service provider",
+  "category": [
+    "https://www.example.com/residential/",
+    "https://www.example.com/commercial/"
+  ],
+  "slogan": "Example Business of Anytown Will Treat You Right",
+  "termsOfService": "http://www.example.com/tos",
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "professional services",
+    "itemListElement": [
+      {
+        "@type": "OfferCatalog",
+        "name": "repair",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Storm Damage"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Leaky repair"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "replacement"
+            }
+          }
+        ]
+      },
+      {
+        "@type": "OfferCatalog",
+        "name": "One-time services",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Commercial replacement"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "residential service Installation"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "project Inspection"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

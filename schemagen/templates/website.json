@@ -1,0 +1,18 @@
+{
+  "@context": "http://schema.org",
+  "@type": "WebSite",
+  "@id": "http://example.com/#website",
+  "url": "http://example.com/",
+  "name": "Example Business",
+  "alternateName": "Example Business",
+  "description": "Example Business has been picked by the community of Anytown, ST to be the best top service provider in Anytown.  If you are looking for the top service Anytown contractor then Example Business is right for you",
+  "disambiguatingDescription": "Since 1993, Springfield and Anytown specialists at Example Business have set the standard in re-service and repairs, winning awards from Angie's List and BBB.",
+  "identifier": "https://en.wikipedia.org/wiki/Service_economics",
+  "image": "https://www.example.com/images/logo.png",
+  "mainEntityOfPage": "https://en.wikipedia.org/wiki/Tradesperson",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://example.com/search?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
