@@ -10,7 +10,7 @@ services:
     http_port: 8080
     run_command: gunicorn --workers 2 --bind 0.0.0.0:8080 webapp.app:app
     github:
-      repo: YOUR_GH_USER/schema-generator   # <-- set to your repo
+      repo: the-edward-exe/schema-generator
       branch: main
       deploy_on_push: true
     health_check:
