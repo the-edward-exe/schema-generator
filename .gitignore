@@ -9,3 +9,6 @@ Customer outputs/
 # regenerate them via tools/, and the PDFs are internal methodology docs.)
 Schema Templates/
 tech-supporting-documents/
+
+# local-only deploy spec (contains a secret)
+.do/app.git.yaml
