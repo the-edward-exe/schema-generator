@@ -41,14 +41,14 @@ def questions(qa):
 
 
 def build_sitewide(domain, overrides=None,
-                   nodes=("organization", "localbusiness", "website"), strict=True):
+                   nodes=("organization", "localbusiness", "website", "breadcrumb"), strict=True):
     """The identity graph deployed in the header on every page."""
     return core.assemble_graph(list(nodes), domain=domain,
                                overrides=overrides or {}, strict=strict)
 
 
 def build_page(domain, path, nodes, overrides=None, strict=True,
-               sitewide_fragments=("organization", "localbusiness", "website")):
+               sitewide_fragments=("organization", "localbusiness", "website", "breadcrumb")):
     """Build one page graph, re-scope its @ids to the page URL, and wire the
     cross-references back to the site-wide identity nodes.
 
@@ -126,9 +126,9 @@ def generate(config, base="."):
     sw = config.get("sitewide", {})
     sw_graph = build_sitewide(domain, sw.get("overrides", {}),
                               nodes=sw.get("nodes",
-                                           ("organization", "localbusiness", "website")))
+                                           ("organization", "localbusiness", "website", "breadcrumb")))
     written.append(write(sw_graph, name, "sitewide.json", base))
-    sw_frags = tuple(sw.get("nodes", ("organization", "localbusiness", "website")))
+    sw_frags = tuple(sw.get("nodes", ("organization", "localbusiness", "website", "breadcrumb")))
 
     for page in config.get("pages", []):
         g = build_page(domain, page["path"], page["nodes"],

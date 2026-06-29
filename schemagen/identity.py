@@ -114,6 +114,14 @@ def sitewide_overrides(data):
         "@type": "SearchAction",
         "target": data.get("search_url") or (base_url + "/search?q={search_term_string}"),
         "query-input": "required name=search_term_string"}
+
+    # Site-wide breadcrumb (top level: Home). Overrides the template's example
+    # items so no placeholder data ships.
+    sw["breadcrumb.itemListElement"] = project.crumb([("Home", base_url + "/")])
+    sw["breadcrumb.numberOfItems"] = "1"
+    _put(sw, "breadcrumb.description", desc)
+    _put(sw, "breadcrumb.disambiguatingDescription", disambig)
+    sw["breadcrumb.mainEntityOfPage"] = base_url + "/"
     return sw
 
 
