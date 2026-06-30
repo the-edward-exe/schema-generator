@@ -315,7 +315,10 @@ CONV_BODY = """
 <div id="cv_err" class="err" style="display:none"></div>
 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem">
   <label style="margin:0">Output</label>
-  <button type="button" id="cv_copy" class="copybtn">Copy to clipboard</button>
+  <div style="display:flex;gap:.5rem">
+    <button type="button" id="cv_dl" class="copybtn">Download</button>
+    <button type="button" id="cv_copy" class="copybtn">Copy to clipboard</button>
+  </div>
 </div>
 <textarea id="cv_output" class="mono" readonly></textarea>
 </div>
@@ -333,6 +336,14 @@ $("#cv_btn").onclick=async()=>{$("#cv_err").style.display="none";
 $("#cv_copy").onclick=async()=>{const t=$("#cv_output").value;if(!t)return;const b=$("#cv_copy"),o=b.textContent;
   try{await navigator.clipboard.writeText(t);}catch(e){$("#cv_output").select();document.execCommand("copy");}
   b.textContent="Copied!";setTimeout(()=>b.textContent=o,1500);};
+const EXT={"json-schema":"json","typescript":"ts","python":"py","go":"go","java":"java","sql":"sql"};
+$("#cv_dl").onclick=()=>{const t=$("#cv_output").value;if(!t)return;
+  const fmt=$("#cv_format").value;const ext=EXT[fmt]||"txt";
+  const root=($("#cv_root").value||"schema").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"schema";
+  const mime=fmt==="json-schema"?"application/json":"text/plain";
+  const u=URL.createObjectURL(new Blob([t],{type:mime}));
+  const a=document.createElement("a");a.href=u;a.download=root+"."+ext;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);
+  const b=$("#cv_dl"),o=b.textContent;b.textContent="Downloaded ✓";setTimeout(()=>b.textContent=o,1500);};
 </script>"""
 
 
