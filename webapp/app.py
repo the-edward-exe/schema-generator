@@ -118,6 +118,8 @@ GEAR = ('<button id="gear" class="gear" title="Settings" aria-label="Settings">'
 
 HEAD = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
         '<title>Web Blend &middot; Schema Generator</title>'
+        '<link rel="icon" type="image/png" href="/static/favicon.png">'
+        '<link rel="apple-touch-icon" href="/static/favicon.png">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
         '<link rel="preconnect" href="https://fonts.googleapis.com">'
         '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
