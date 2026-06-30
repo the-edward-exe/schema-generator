@@ -162,7 +162,7 @@ GEN_BODY = """
 <h2>Business identity (site-wide)</h2>
 <div class="row"><div><label class="req">Business name</label><input name="name" required></div>
 <div><label class="req">Domain</label><input name="domain" placeholder="https://www.acme.com" required></div></div>
-<button type="button" id="scanbtn" class="primary" style="margin-top:.7rem">&#9889; Fill from Site Scan</button>
+<button type="button" id="scanbtn" class="primary" style="margin-top:.7rem">Fill from Site Scan</button>
 <span class="hint" id="scanhint" style="margin-left:.5rem">Crawl the homepage to pre-fill the empty fields below — then review &amp; edit before generating.</span>
 <div class="row" style="margin-top:.6rem"><div><label>Industry @type <span class="hint">(Dentist, Restaurant, Store…)</span></label><input name="itype" id="f_itype" placeholder="LocalBusiness"></div>
 <div><label>Legal name</label><input name="legal"></div></div>
