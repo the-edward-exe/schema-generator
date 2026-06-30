@@ -1,10 +1,10 @@
 """Web UI for the schema generator — a thin Flask wrapper over schemagen.
 
-Enter a business + domain; the app can auto-crawl the site, build a strategic
-schema profile (sitewide identity + a WebPage schema per page, plus Person /
-Service / Article / CollectionPage where detected), auto-fill logo, socials and
-descriptions from the site, and return the JSON-LD as two zips (site-wide vs
-per-page) inside one download. Web Blend-branded, with a gear Settings panel.
+Two pages behind a shared nav:
+  /           Schema generator (crawl/auto-build, two-zip JSON-LD export)
+  /converter  Output & Conversion (JSON -> JSON Schema / types / SQL DDL)
+
+Web Blend-branded; optional HTTP basic auth; gear Settings (generator defaults).
 """
 import datetime
 import hmac
@@ -17,11 +17,11 @@ import tempfile
 import zipfile
 from urllib.parse import urlparse
 
-from flask import Flask, request, send_file, render_template_string, Response, jsonify
+from flask import Flask, request, send_file, Response, jsonify
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(_HERE))   # repo root -> schemagen
-sys.path.insert(0, _HERE)                     # webapp -> crawl, describe
+sys.path.insert(0, os.path.dirname(_HERE))
+sys.path.insert(0, _HERE)
 from schemagen import core, identity, project  # noqa: E402
 import crawl  # noqa: E402
 import describe  # noqa: E402
@@ -47,28 +47,27 @@ def _require_auth():
     return None
 
 
-FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<title>Web Blend · Schema Generator</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-<style>
+# --------------------------------------------------------------------------- #
+# Shared chrome
+# --------------------------------------------------------------------------- #
+STYLE = """
  :root{--ink:#151515;--surface:#1F1F1F;--surface2:#2A2A2A;--line:#3a3a3a;
    --orange:#FE8F35;--orange2:#ED7A1C;--gold:#F7C74A;--text:#ECECEC;--muted:#B9B9B9;
    --grad:linear-gradient(135deg,#FE8F35 0%,#F7C74A 100%);}
  *{box-sizing:border-box}
  body{font:15px/1.6 'Inter',system-ui,sans-serif;background:var(--ink);color:var(--text);margin:0}
  h1,h2,.appname{font-family:'Poppins',sans-serif;letter-spacing:-.01em}
- .topbar{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.25rem;
-   border-bottom:1px solid var(--line);background:#121212;position:sticky;top:0;z-index:5}
- .brand{display:flex;align-items:center;gap:.7rem}.brand img{height:30px;display:block}
- .appname{font-weight:700;font-size:1.05rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
- .gear{background:transparent;border:1px solid var(--line);border-radius:10px;width:40px;height:40px;
-   display:grid;place-items:center;cursor:pointer;color:var(--orange);transition:.2s}
- .gear:hover{border-color:var(--orange);transform:rotate(45deg)}.gear svg{width:20px;height:20px}
+ .topbar{display:flex;align-items:center;gap:.5rem;padding:.8rem 1.25rem;border-bottom:1px solid var(--line);background:#121212;position:sticky;top:0;z-index:5}
+ .brand{display:flex;align-items:center;gap:.6rem}.brand img{height:28px;display:block}
+ .appname{font-weight:700;font-size:1rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+ .nav{display:flex;gap:.3rem;margin-left:1rem;flex:1}
+ .nav a{color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem;padding:.45rem .8rem;border-radius:8px}
+ .nav a:hover{color:#fff;background:var(--surface2)}
+ .nav a.on{color:#151515;background:var(--grad)}
+ .gear{background:transparent;border:1px solid var(--line);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;color:var(--orange);transition:.2s}
+ .gear:hover{border-color:var(--orange);transform:rotate(45deg)}.gear svg{width:19px;height:19px}
  .wrap{max-width:780px;margin:0 auto;padding:1.5rem 1.25rem 4rem}
- .hero{margin:.5rem 0 1.6rem}.hero h1{font-size:1.9rem;margin:.2rem 0 .4rem;line-height:1.15}
+ .hero{margin:.5rem 0 1.4rem}.hero h1{font-size:1.8rem;margin:.2rem 0 .4rem;line-height:1.15}
  .hero h1 .accent{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
  .lede{color:var(--muted);margin:0;max-width:62ch}.lede code{background:var(--surface2);padding:.05rem .35rem;border-radius:5px;color:#fff;font-size:.85em}
  h2{font-size:1rem;margin:1.8rem 0 .4rem;color:var(--orange);border-bottom:1px solid var(--line);padding-bottom:.35rem}
@@ -76,7 +75,7 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .hint{font-weight:400;color:var(--muted);font-size:.78rem}
  input,textarea,select{width:100%;padding:.55rem .65rem;border:1px solid var(--line);border-radius:8px;font:inherit;background:var(--surface2);color:var(--text)}
  input::placeholder,textarea::placeholder{color:#7c7c7c}
- input:focus,textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(254,143,53,.18)}
+ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(254,143,53,.18)}
  textarea{min-height:3.5rem;resize:vertical}
  .row{display:flex;gap:.8rem;flex-wrap:wrap}.row>div{flex:1;min-width:160px}
  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.25rem;margin-top:1rem}
@@ -84,8 +83,7 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .chkrow label{display:inline-flex;align-items:center;font-weight:400;margin-right:1.1rem}
  .chk{width:auto;margin-right:.4rem}
  .switch{display:flex;align-items:center;gap:.6rem;font-weight:600;font-size:.95rem;color:#fff}
- button.primary{margin-top:1.5rem;background:var(--grad);color:#151515;border:0;padding:.8rem 1.6rem;border-radius:10px;
-   font:700 1rem 'Poppins',sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(254,143,53,.28);transition:.15s}
+ button.primary{margin-top:1.5rem;background:var(--grad);color:#151515;border:0;padding:.8rem 1.6rem;border-radius:10px;font:700 1rem 'Poppins',sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(254,143,53,.28);transition:.15s}
  button.primary:hover{transform:translateY(-1px);box-shadow:0 9px 24px rgba(254,143,53,.4)}
  .req:after{content:" *";color:var(--orange)}
  .err{color:#ff8f8f;background:#2a1414;border:1px solid #5b2b2b;padding:.7rem 1rem;border-radius:8px;margin-top:1rem}
@@ -102,17 +100,49 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
  .pbar{height:100%;width:38%;background:var(--grad);border-radius:999px;animation:slide 1.3s ease-in-out infinite}
  @keyframes slide{0%{transform:translateX(-120%)}100%{transform:translateX(330%)}}
  #pstatus{color:var(--muted);font-size:.86rem}
-</style></head><body>
-<header class="topbar">
-  <div class="brand"><img src="/static/webblend-logo.png" alt="Web Blend"><span class="appname">Schema Generator</span></div>
-  <button id="gear" class="gear" title="Settings" aria-label="Settings">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3"></circle>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-    </svg>
-  </button>
-</header>
-<div class="wrap">
+ .copybtn{background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:.4rem .9rem;font:600 .82rem 'Inter';cursor:pointer}
+ .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem;min-height:11rem}
+"""
+
+GEAR = ('<button id="gear" class="gear" title="Settings" aria-label="Settings">'
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+        'stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle>'
+        '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 '
+        '1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 '
+        '19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 '
+        '.33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 '
+        '0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 '
+        '1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 '
+        '1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 '
+        '0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>')
+
+HEAD = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<title>Web Blend &middot; Schema Generator</title>'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+        '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&'
+        'family=Poppins:wght@600;700&display=swap" rel="stylesheet">'
+        '<style>' + STYLE + '</style></head><body>')
+
+TAIL = ('<p class="foot">Web Blend &middot; Schema Generator</p></div></body></html>')
+
+
+def topbar(active, gear=False):
+    a1 = ' class="on"' if active == "gen" else ""
+    a2 = ' class="on"' if active == "conv" else ""
+    return ('<header class="topbar"><div class="brand">'
+            '<img src="/static/webblend-logo.png" alt="Web Blend">'
+            '<span class="appname">Schema Generator</span></div>'
+            '<nav class="nav"><a href="/"' + a1 + '>Generator</a>'
+            '<a href="/converter"' + a2 + '>Output &amp; Conversion</a></nav>'
+            + (GEAR if gear else "") + '</header><div class="wrap">')
+
+
+# --------------------------------------------------------------------------- #
+# Generator page
+# --------------------------------------------------------------------------- #
+GEN_BODY = """
 <div class="hero">
   <h1>JSON-LD <span class="accent">Schema Generator</span></h1>
   <p class="lede">Enter a business and domain. Auto-build crawls the site, writes a
@@ -124,22 +154,21 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <input type="hidden" name="search_url" id="f_search_url">
 <div class="card auto">
   <label class="switch"><input class="chk" type="checkbox" name="autobuild" id="autobuild" checked> Auto-build schema from the website</label>
-  <p class="hint">Crawls the domain (sitemap or links), builds a WebPage schema per page
-  (+ Person / Service / Article / CollectionPage where detected), and auto-fills any
-  blank Logo / Socials / Descriptions from the site. Turn off to build only the pages
-  you tick below.</p>
+  <p class="hint">Crawls the domain, builds a WebPage schema per page (+ Person / Service /
+  Article / CollectionPage where detected), and auto-fills any blank Logo / Socials /
+  Descriptions from the site. Turn off to build only the pages you tick below.</p>
 </div>
 <div class="card">
 <h2>Business identity (site-wide)</h2>
 <div class="row"><div><label class="req">Business name</label><input name="name" required></div>
 <div><label class="req">Domain</label><input name="domain" placeholder="https://www.acme.com" required></div></div>
-<div class="row"><div><label>Industry @type <span class="hint">(Dentist, Restaurant, Store, ProfessionalService…)</span></label><input name="itype" id="f_itype" placeholder="LocalBusiness"></div>
+<div class="row"><div><label>Industry @type <span class="hint">(Dentist, Restaurant, Store…)</span></label><input name="itype" id="f_itype" placeholder="LocalBusiness"></div>
 <div><label>Legal name</label><input name="legal"></div></div>
 <div class="row"><div><label>Phone</label><input name="phone"></div><div><label>Email</label><input name="email"></div></div>
-<label>Short description <span class="hint">(meta-style; blank = auto from site)</span></label><textarea name="desc"></textarea>
-<label>Second description <span class="hint">(must differ; blank = auto from site)</span></label><textarea name="disambig"></textarea>
-<label>Logo URL <span class="hint">(blank = auto from site)</span></label><input name="logo">
-<label>Social profile URLs <span class="hint">(blank = auto from site; else one per line / comma-separated)</span></label><textarea name="social"></textarea>
+<label>Short description <span class="hint">(blank = auto from site)</span></label><textarea name="desc"></textarea>
+<label>Second description <span class="hint">(must differ; blank = auto)</span></label><textarea name="disambig"></textarea>
+<label>Logo URL <span class="hint">(blank = auto)</span></label><input name="logo">
+<label>Social profile URLs <span class="hint">(blank = auto; else one per line / comma)</span></label><textarea name="social"></textarea>
 <label>Service-area cities <span class="hint">(comma / newline separated)</span></label><textarea name="cities"></textarea>
 <div class="row"><div><label>City</label><input name="locality"></div><div><label>State/region</label><input name="region"></div>
 <div><label>Country</label><input name="country" id="f_country" value="US"></div></div>
@@ -152,7 +181,6 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <label>Google Maps / Business link (hasMap)</label><input name="maps">
 <label>Brand entity URL <span class="hint">(Wikipedia/Wikidata)</span></label><input name="entity">
 </div>
-
 <div class="card">
 <h2>Manual pages <span class="hint">(used when Auto-build is off)</span></h2>
 <div class="chkrow">
@@ -169,61 +197,33 @@ FORM = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <button class="primary" type="submit">Generate &amp; download</button>
 </form>
 <div id="formerr" class="err" style="display:none"></div>
-{% if error %}<p class="err"><b>Error:</b> {{ error }}</p>{% endif %}
-<div class="card">
-<h2>Output &amp; Conversion</h2>
-<p class="hint">Paste any JSON — e.g. a node from your generated schema — and convert it to a
-JSON&nbsp;Schema, typed code, or SQL DDL. Then copy it to the clipboard.</p>
-<label>JSON input</label>
-<textarea id="cv_input" placeholder='{"@type":"Organization","name":"Acme Co","numberOfEmployees":12}'></textarea>
-<div class="row">
-  <div><label>Format</label>
-    <select id="cv_format">
-      <option value="json-schema">JSON Schema</option>
-      <option value="typescript">TypeScript</option>
-      <option value="python">Python (TypedDict)</option>
-      <option value="go">Go structs</option>
-      <option value="java">Java classes</option>
-      <option value="sql">SQL DDL</option>
-    </select></div>
-  <div><label>Root type name</label><input id="cv_root" value="Root"></div>
-</div>
-<button type="button" class="primary" id="cv_btn" style="margin-top:1rem">Convert</button>
-<div id="cv_err" class="err" style="display:none"></div>
-<div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem">
-  <label style="margin:0">Output</label>
-  <button type="button" id="cv_copy" style="background:var(--surface2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:.4rem .9rem;font:600 .82rem 'Inter';cursor:pointer">Copy to clipboard</button>
-</div>
-<textarea id="cv_output" readonly style="min-height:9rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem"></textarea>
-</div>
-<p class="foot">Web Blend · Schema Generator — structured data that helps Google understand the business.</p>
-</div>
 
 <div class="overlay" id="overlay"><div class="modal">
-    <h2>Settings <small>defaults remembered in this browser</small></h2>
-    <label>Default industry @type</label><input id="s_itype" placeholder="LocalBusiness">
-    <label>Default country</label><input id="s_country" placeholder="US">
-    <label>Default site search URL <span class="hint">(uses {search_term_string})</span></label>
-    <input id="s_search" placeholder="https://site.com/search?q={search_term_string}">
-    <label>Manual pages checked by default</label>
-    <div class="chkrow">
-      <label><input class="chk" type="checkbox" id="s_p_about">About</label>
-      <label><input class="chk" type="checkbox" id="s_p_contact">Contact</label>
-      <label><input class="chk" type="checkbox" id="s_p_collection">Collection</label>
-      <label><input class="chk" type="checkbox" id="s_p_faq">FAQ</label>
-    </div>
-    <div class="actions"><button class="save" id="s_save">Save</button>
-      <button id="s_reset">Reset</button><button class="ghost" id="s_close">Close</button></div>
+  <h2>Settings <small>defaults remembered in this browser</small></h2>
+  <label>Default industry @type</label><input id="s_itype" placeholder="LocalBusiness">
+  <label>Default country</label><input id="s_country" placeholder="US">
+  <label>Default site search URL <span class="hint">(uses {search_term_string})</span></label>
+  <input id="s_search" placeholder="https://site.com/search?q={search_term_string}">
+  <label>Manual pages checked by default</label>
+  <div class="chkrow">
+    <label><input class="chk" type="checkbox" id="s_p_about">About</label>
+    <label><input class="chk" type="checkbox" id="s_p_contact">Contact</label>
+    <label><input class="chk" type="checkbox" id="s_p_collection">Collection</label>
+    <label><input class="chk" type="checkbox" id="s_p_faq">FAQ</label>
+  </div>
+  <div class="actions"><button class="save" id="s_save">Save</button>
+    <button id="s_reset">Reset</button><button class="ghost" id="s_close">Close</button></div>
 </div></div>
-
 <div class="overlay" id="progress"><div class="modal">
   <h2 style="display:block;border:0;color:var(--text)">Generating schema…</h2>
   <div class="pwrap"><div class="pbar"></div></div>
   <div id="pstatus">Starting…</div>
 </div></div>
+"""
 
-<script>
-const SK="schemagen_settings_v1";const $=s=>document.querySelector(s);
+GEN_JS = """<script>
+const $=s=>document.querySelector(s);
+const SK="schemagen_settings_v1";
 function load(){try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}}
 function apply(){const s=load();
   if(s.itype)$("#f_itype").value=s.itype; if(s.country)$("#f_country").value=s.country;
@@ -247,78 +247,76 @@ $("#s_reset").onclick=()=>{localStorage.removeItem(SK);
   $("#f_itype").value="";$("#f_country").value="US";$("#f_search_url").value="";
   ["p_about","p_contact","p_collection","p_faq"].forEach(i=>$("#"+i).checked=false);};
 apply();
-
-// ---- progress + fetch submit ----
 const PF=$("#genform");
-const STEPS_AUTO=["Connecting to the site…","Crawling pages (sitemap & links)…",
-  "Reading titles & descriptions…","Writing schema for each page…","Packaging JSON into zips…"];
-const STEPS_MAN=["Building schema…","Packaging JSON into zips…"];
-let ptimer=null,pt0=0;
-function showProgress(auto){
-  const steps=auto?STEPS_AUTO:STEPS_MAN; let i=0; pt0=Date.now();
-  $("#pstatus").textContent=steps[0]+" (0s)";
-  $("#progress").classList.add("open");
-  ptimer=setInterval(()=>{
-    const s=Math.round((Date.now()-pt0)/1000);
-    if(i<steps.length-1 && s>=(i+1)*6) i++;
-    $("#pstatus").textContent=steps[i]+" ("+s+"s)";
-  },500);
-}
-function hideProgress(){clearInterval(ptimer);$("#progress").classList.remove("open");}
-PF.addEventListener("submit",async e=>{
-  e.preventDefault();
-  $("#formerr").style.display="none";
-  showProgress($("#autobuild").checked);
-  try{
-    const resp=await fetch("/generate",{method:"POST",body:new FormData(PF)});
-    const ct=resp.headers.get("Content-Type")||"";
-    if(resp.ok && ct.includes("application/zip")){
-      const blob=await resp.blob();
-      const cd=resp.headers.get("Content-Disposition")||"";
-      const m=cd.match(/filename=([^;]+)/);
-      const name=m?m[1].trim().replace(/"/g,""):"schema.zip";
-      const u=URL.createObjectURL(blob);
-      const a=document.createElement("a");a.href=u;a.download=name;
-      document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);
-      hideProgress();
-    }else{
-      let msg="Something went wrong.";
-      try{const j=await resp.json();if(j&&j.error)msg=j.error;}catch(_){}
-      hideProgress();
-      const fe=$("#formerr");fe.textContent="Error: "+msg;fe.style.display="block";
-      fe.scrollIntoView({behavior:"smooth",block:"center"});
-    }
-  }catch(err){
-    hideProgress();
-    const fe=$("#formerr");fe.textContent="Network error: "+err.message;fe.style.display="block";
-  }
-});
+const SA=["Connecting to the site…","Crawling pages (sitemap & links)…","Reading titles & descriptions…","Writing schema for each page…","Packaging JSON into zips…"];
+const SM=["Building schema…","Packaging JSON into zips…"];
+let pt=null,p0=0;
+function showP(auto){const st=auto?SA:SM;let i=0;p0=Date.now();$("#pstatus").textContent=st[0]+" (0s)";$("#progress").classList.add("open");
+  pt=setInterval(()=>{const s=Math.round((Date.now()-p0)/1000);if(i<st.length-1&&s>=(i+1)*6)i++;$("#pstatus").textContent=st[i]+" ("+s+"s)";},500);}
+function hideP(){clearInterval(pt);$("#progress").classList.remove("open");}
+PF.addEventListener("submit",async e=>{e.preventDefault();$("#formerr").style.display="none";showP($("#autobuild").checked);
+  try{const r=await fetch("/generate",{method:"POST",body:new FormData(PF)});const ct=r.headers.get("Content-Type")||"";
+    if(r.ok&&ct.includes("application/zip")){const b=await r.blob();const cd=r.headers.get("Content-Disposition")||"";
+      const m=cd.match(/filename=([^;]+)/);const nm=m?m[1].trim().replace(/"/g,""):"schema.zip";
+      const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=nm;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);hideP();}
+    else{let msg="Something went wrong.";try{const j=await r.json();if(j&&j.error)msg=j.error;}catch(_){}hideP();
+      const fe=$("#formerr");fe.textContent="Error: "+msg;fe.style.display="block";fe.scrollIntoView({behavior:"smooth",block:"center"});}}
+  catch(err){hideP();const fe=$("#formerr");fe.textContent="Network error: "+err.message;fe.style.display="block";}});
+</script>"""
 
-// ---- converter ----
-$("#cv_btn").onclick=async()=>{
-  $("#cv_err").style.display="none";
-  const fd=new FormData();
-  fd.append("json",$("#cv_input").value);
-  fd.append("format",$("#cv_format").value);
-  fd.append("root",$("#cv_root").value||"Root");
-  try{
-    const r=await fetch("/convert",{method:"POST",body:fd});
+
+# --------------------------------------------------------------------------- #
+# Converter page
+# --------------------------------------------------------------------------- #
+CONV_BODY = """
+<div class="hero">
+  <h1>Output &amp; <span class="accent">Conversion</span></h1>
+  <p class="lede">Paste any JSON — e.g. a node from your generated schema — and convert it
+  to a JSON&nbsp;Schema, typed code, or SQL DDL. Then copy it to the clipboard.</p>
+</div>
+<div class="card">
+<label>JSON input</label>
+<textarea id="cv_input" class="mono" placeholder='{"@type":"Organization","name":"Acme Co","numberOfEmployees":12}'></textarea>
+<div class="row">
+  <div><label>Format</label>
+    <select id="cv_format">
+      <option value="json-schema">JSON Schema</option>
+      <option value="typescript">TypeScript</option>
+      <option value="python">Python (TypedDict)</option>
+      <option value="go">Go structs</option>
+      <option value="java">Java classes</option>
+      <option value="sql">SQL DDL</option>
+    </select></div>
+  <div><label>Root type name</label><input id="cv_root" value="Root"></div>
+</div>
+<button type="button" class="primary" id="cv_btn">Convert</button>
+<div id="cv_err" class="err" style="display:none"></div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem">
+  <label style="margin:0">Output</label>
+  <button type="button" id="cv_copy" class="copybtn">Copy to clipboard</button>
+</div>
+<textarea id="cv_output" class="mono" readonly></textarea>
+</div>
+"""
+
+CONV_JS = """<script>
+const $=s=>document.querySelector(s);
+$("#cv_btn").onclick=async()=>{$("#cv_err").style.display="none";
+  const fd=new FormData();fd.append("json",$("#cv_input").value);fd.append("format",$("#cv_format").value);fd.append("root",$("#cv_root").value||"Root");
+  try{const r=await fetch("/convert",{method:"POST",body:fd});
     if(r.ok){$("#cv_output").value=await r.text();}
     else{let m="Conversion failed.";try{const j=await r.json();if(j&&j.error)m=j.error;}catch(_){}
-      const e=$("#cv_err");e.textContent="Error: "+m;e.style.display="block";}
-  }catch(err){const e=$("#cv_err");e.textContent="Network error: "+err.message;e.style.display="block";}
-};
-$("#cv_copy").onclick=async()=>{
-  const t=$("#cv_output").value; if(!t)return;
-  const btn=$("#cv_copy"),old=btn.textContent;
-  try{await navigator.clipboard.writeText(t);}
-  catch(e){$("#cv_output").select();document.execCommand("copy");}
-  btn.textContent="Copied!";setTimeout(()=>btn.textContent=old,1500);
-};
-</script>
-</body></html>"""
+      const e=$("#cv_err");e.textContent="Error: "+m;e.style.display="block";}}
+  catch(err){const e=$("#cv_err");e.textContent="Network error: "+err.message;e.style.display="block";}};
+$("#cv_copy").onclick=async()=>{const t=$("#cv_output").value;if(!t)return;const b=$("#cv_copy"),o=b.textContent;
+  try{await navigator.clipboard.writeText(t);}catch(e){$("#cv_output").select();document.execCommand("copy");}
+  b.textContent="Copied!";setTimeout(()=>b.textContent=o,1500);};
+</script>"""
 
 
+# --------------------------------------------------------------------------- #
+# helpers
+# --------------------------------------------------------------------------- #
 def _split(raw):
     return [x.strip() for x in re.split(r"[\n,]+", raw or "") if x.strip()]
 
@@ -346,15 +344,26 @@ def _zip_bytes(files):
     return b.read()
 
 
-# crawl page-type hint -> (extra node, webpage @type override)
+def _err(msg, code=400):
+    return jsonify({"error": msg}), code
+
+
 _NODE = {"person": ("person", None), "service": ("service", None),
          "article": ("article", None), "collection": (None, "CollectionPage"),
          "product": (None, "CollectionPage")}
 
 
+# --------------------------------------------------------------------------- #
+# routes
+# --------------------------------------------------------------------------- #
 @app.route("/")
 def home():
-    return render_template_string(FORM, error=None)
+    return HEAD + topbar("gen", gear=True) + GEN_BODY + TAIL + GEN_JS
+
+
+@app.route("/converter")
+def converter():
+    return HEAD + topbar("conv", gear=False) + CONV_BODY + TAIL + CONV_JS
 
 
 @app.route("/healthz")
@@ -372,10 +381,6 @@ def convert_route():
     except ValueError as e:
         return _err(str(e))
     return Response(out, mimetype="text/plain; charset=utf-8")
-
-
-def _err(msg, code=400):
-    return jsonify({"error": msg}), code
 
 
 @app.route("/generate", methods=["POST"])

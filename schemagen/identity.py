@@ -110,10 +110,13 @@ def sitewide_overrides(data):
     _put(sw, "website.mainEntityOfPage", entity)
     # Sitelinks search box. Default to a platform-neutral /search?q= URL; pass
     # data["search_url"] to match your site's actual search endpoint.
+    # schema.org-compliant SearchAction: EntryPoint target, no Google-only
+    # "query-input" token (that fails validator.schema.org).
     sw["website.potentialAction"] = {
         "@type": "SearchAction",
-        "target": data.get("search_url") or (base_url + "/search?q={search_term_string}"),
-        "query-input": "required name=search_term_string"}
+        "target": {"@type": "EntryPoint",
+                   "urlTemplate": data.get("search_url")
+                   or (base_url + "/search?q={search_term_string}")}}
 
     # Site-wide breadcrumb (top level: Home). Overrides the template's example
     # items so no placeholder data ships.
