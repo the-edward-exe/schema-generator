@@ -224,6 +224,129 @@ def crawl(domain, max_pages=25, timeout=8):
             "error": None if pages else "no crawlable pages were found"}
 
 
+_LB = {"LocalBusiness", "Store", "OnlineStore", "Restaurant", "ProfessionalService",
+       "Organization", "ElectronicsStore", "Dentist", "Plumber", "Electrician",
+       "HomeAndConstructionBusiness", "Corporation"}
+
+
+def _types(n):
+    t = n.get("@type")
+    return [str(x) for x in (t if isinstance(t, list) else [t])] if t else []
+
+
+def _text(v):
+    if isinstance(v, dict):
+        return str(v.get("name") or v.get("url") or "").strip()
+    if isinstance(v, (str, int, float)):
+        return str(v).strip()
+    return ""
+
+
+def _img(v):
+    if isinstance(v, dict):
+        return _text(v.get("url") or v.get("contentUrl"))
+    return v if isinstance(v, str) else ""
+
+
+def _names(v):
+    if v is None:
+        return []
+    items = v if isinstance(v, list) else [v]
+    return [n for n in (_text(x) for x in items) if n]
+
+
+def _jsonld_nodes(html):
+    nodes = []
+    soup = BeautifulSoup(html, "html.parser")
+    for s in soup.find_all("script", attrs={"type": "application/ld+json"}):
+        raw = s.string or s.get_text()
+        if not raw:
+            continue
+        try:
+            data = json.loads(raw)
+        except Exception:
+            continue
+        items = data.get("@graph") if isinstance(data, dict) and "@graph" in data else data
+        items = items if isinstance(items, list) else [items]
+        nodes += [it for it in items if isinstance(it, dict)]
+    return nodes
+
+
+def scan(domain, timeout=20):
+    """Crawl just the homepage and extract the form-fillable fields (meta tags +
+    any existing JSON-LD). Returns {field: value} for the generator form, or
+    {"error": reason}. Does NOT build a schema profile."""
+    base = domain if domain.startswith("http") else "https://" + domain
+    p = urlparse(base)
+    base = p.scheme + "://" + p.netloc
+    home, err = _fetch(base + "/", timeout=timeout, retries=1)
+    if not home:
+        return {"error": err or "homepage unreachable"}
+
+    soup = BeautifulSoup(home.text, "html.parser")
+    assets = _extract_assets(home.text, base)
+
+    def meta(name, key):
+        t = soup.find("meta", attrs={name: key})
+        return (t.get("content") or "").strip() if t and t.get("content") else ""
+    md, og = meta("name", "description"), meta("property", "og:description")
+
+    org = website = address = person = None
+    for n in _jsonld_nodes(home.text):
+        ts = _types(n)
+        if "WebSite" in ts and not website:
+            website = n
+        if not org and (set(ts) & _LB or any(t.endswith("Business") for t in ts)):
+            org = n
+        if "PostalAddress" in ts and not address:
+            address = n
+        if "Person" in ts and not person:
+            person = n
+    if not org:
+        for n in _jsonld_nodes(home.text):
+            if n.get("name") and (n.get("telephone") or n.get("address") or n.get("sameAs")):
+                org = n
+                break
+    org = org or {}
+    web = website or {}
+
+    def g(k):
+        return org.get(k)
+
+    addr = address or (g("address") if isinstance(g("address"), dict) else {}) or {}
+    spec = next((t for t in _types(org) if t not in ("Organization", "Thing", "LocalBusiness")), "")
+    sa = g("sameAs")
+    socials = [x for x in (sa if isinstance(sa, list) else [sa] if sa else []) if isinstance(x, str)]
+    desc = _text(md or og or g("description") or assets.get("description"))
+    disa = _text(g("disambiguatingDescription"))
+    if not disa:
+        disa = og if (og and og != desc) else (md if (md and md != desc) else "")
+    if disa == desc:
+        disa = ""
+    res = {
+        "name": _text(g("name") or web.get("name")),
+        "itype": spec,
+        "legal": _text(g("legalName")),
+        "phone": _text(g("telephone") or web.get("telephone")),
+        "email": _text(g("email")),
+        "desc": desc,
+        "disambig": disa,
+        "logo": _img(g("logo")) or assets.get("logo") or "",
+        "social": "\n".join(socials or assets.get("social") or []),
+        "locality": _text(addr.get("addressLocality")),
+        "region": _text(addr.get("addressRegion")),
+        "country": _text(addr.get("addressCountry")),
+        "street": _text(addr.get("streetAddress")),
+        "cities": ", ".join(_names(g("areaServed"))),
+        "owner": _text((_names(g("founder") or g("founders") or person) or [""])[0]),
+        "keywords": ", ".join(_names(g("knowsAbout"))) or _text(g("keywords")),
+        "hours": ", ".join(_names(g("openingHours"))) if isinstance(g("openingHours"), list) else _text(g("openingHours")),
+        "price": _text(g("priceRange")),
+        "maps": _img(g("hasMap")) or _text(g("hasMap")),
+    }
+    return {k: v for k, v in res.items() if v}
+
+
 def page_node_type(url):
     path = urlparse(url).path.lower()
     for kw, node in PAGE_TYPE_HINTS:

@@ -162,7 +162,9 @@ GEN_BODY = """
 <h2>Business identity (site-wide)</h2>
 <div class="row"><div><label class="req">Business name</label><input name="name" required></div>
 <div><label class="req">Domain</label><input name="domain" placeholder="https://www.acme.com" required></div></div>
-<div class="row"><div><label>Industry @type <span class="hint">(Dentist, Restaurant, Store…)</span></label><input name="itype" id="f_itype" placeholder="LocalBusiness"></div>
+<button type="button" id="scanbtn" class="copybtn" style="margin-top:.7rem">&#9889; Fill from Site Scan</button>
+<span class="hint" style="margin-left:.5rem">Crawl the homepage to pre-fill the empty fields below — then review &amp; edit before generating.</span>
+<div class="row" style="margin-top:.6rem"><div><label>Industry @type <span class="hint">(Dentist, Restaurant, Store…)</span></label><input name="itype" id="f_itype" placeholder="LocalBusiness"></div>
 <div><label>Legal name</label><input name="legal"></div></div>
 <div class="row"><div><label>Phone</label><input name="phone"></div><div><label>Email</label><input name="email"></div></div>
 <label>Short description <span class="hint">(blank = auto from site)</span></label><textarea name="desc"></textarea>
@@ -248,6 +250,21 @@ $("#s_reset").onclick=()=>{localStorage.removeItem(SK);
   ["p_about","p_contact","p_collection","p_faq"].forEach(i=>$("#"+i).checked=false);};
 apply();
 const PF=$("#genform");
+$("#scanbtn").onclick=async()=>{
+  const dom=PF.querySelector('[name=domain]').value.trim();const fe=$("#formerr");
+  if(!dom){fe.textContent="Enter a domain first, then Fill from Site Scan.";fe.style.display="block";fe.scrollIntoView({behavior:"smooth",block:"center"});return;}
+  fe.style.display="none";const b=$("#scanbtn"),o=b.textContent;b.disabled=true;b.textContent="Scanning…";
+  try{const fd=new FormData();fd.append("domain",dom);
+    const r=await fetch("/scan",{method:"POST",body:fd});
+    if(r.ok){const d=await r.json();let n=0;
+      ["name","itype","legal","phone","email","desc","disambig","logo","social","cities","locality","region","country","street","owner","keywords","hours","price","maps"].forEach(k=>{
+        if(!d[k])return;const el=PF.querySelector('[name="'+k+'"]');if(el&&!el.value){el.value=d[k];n++;}});
+      b.textContent=(n?("Filled "+n+" field"+(n>1?"s":"")+" ✓"):"Nothing new found");
+      setTimeout(()=>{b.textContent=o;b.disabled=false;},2200);}
+    else{let m="Scan failed.";try{const j=await r.json();if(j&&j.error)m=j.error;}catch(_){}
+      fe.textContent="Error: "+m;fe.style.display="block";b.textContent=o;b.disabled=false;}}
+  catch(err){fe.textContent="Network error: "+err.message;fe.style.display="block";b.textContent=o;b.disabled=false;}
+};
 const SA=["Connecting to the site…","Crawling pages (sitemap & links)…","Reading titles & descriptions…","Writing schema for each page…","Packaging JSON into zips…"];
 const SM=["Building schema…","Packaging JSON into zips…"];
 let pt=null,p0=0;
@@ -369,6 +386,21 @@ def converter():
 @app.route("/healthz")
 def healthz():
     return "ok", 200
+
+
+@app.route("/scan", methods=["POST"])
+def scan_route():
+    dom = request.form.get("domain", "").strip()
+    if not dom:
+        return _err("Enter a domain to scan.")
+    try:
+        res = crawl.scan(dom, timeout=int(os.environ.get("CRAWL_TIMEOUT", "20")))
+    except Exception as e:
+        return _err(f"Scan failed: {type(e).__name__}: {e}")
+    if res.get("error"):
+        return _err(f"Couldn't scan {dom} — {res['error']}. "
+                    "The site may block automated requests or require JavaScript.")
+    return jsonify(res)
 
 
 @app.route("/convert", methods=["POST"])
