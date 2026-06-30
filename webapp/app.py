@@ -315,12 +315,10 @@ CONV_BODY = """
 <div id="cv_err" class="err" style="display:none"></div>
 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:1rem">
   <label style="margin:0">Output</label>
-  <div style="display:flex;gap:.5rem">
-    <button type="button" id="cv_dl" class="copybtn">Download</button>
-    <button type="button" id="cv_copy" class="copybtn">Copy to clipboard</button>
-  </div>
+  <button type="button" id="cv_copy" class="copybtn">Copy to clipboard</button>
 </div>
 <textarea id="cv_output" class="mono" readonly></textarea>
+<button type="button" id="cv_dl" class="primary">Download</button>
 </div>
 """
 
