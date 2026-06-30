@@ -324,24 +324,32 @@ CONV_BODY = """
 
 CONV_JS = """<script>
 const $=s=>document.querySelector(s);
-$("#cv_btn").onclick=async()=>{$("#cv_err").style.display="none";
+const EXT={"json-schema":"json","typescript":"ts","python":"py","go":"go","java":"java","sql":"sql"};
+// Convert using the CURRENT dropdown selection; keeps output in sync with the format.
+async function convertNow(){
+  $("#cv_err").style.display="none";
+  if(!$("#cv_input").value.trim()){const e=$("#cv_err");e.textContent="Error: paste JSON to convert.";e.style.display="block";return false;}
   const fd=new FormData();fd.append("json",$("#cv_input").value);fd.append("format",$("#cv_format").value);fd.append("root",$("#cv_root").value||"Root");
   try{const r=await fetch("/convert",{method:"POST",body:fd});
-    if(r.ok){$("#cv_output").value=await r.text();}
-    else{let m="Conversion failed.";try{const j=await r.json();if(j&&j.error)m=j.error;}catch(_){}
-      const e=$("#cv_err");e.textContent="Error: "+m;e.style.display="block";}}
-  catch(err){const e=$("#cv_err");e.textContent="Network error: "+err.message;e.style.display="block";}};
+    if(r.ok){$("#cv_output").value=await r.text();return true;}
+    let m="Conversion failed.";try{const j=await r.json();if(j&&j.error)m=j.error;}catch(_){}
+    const e=$("#cv_err");e.textContent="Error: "+m;e.style.display="block";return false;}
+  catch(err){const e=$("#cv_err");e.textContent="Network error: "+err.message;e.style.display="block";return false;}
+}
+$("#cv_btn").onclick=()=>convertNow();
+// If the format changes after a conversion, re-convert so the output matches the dropdown.
+$("#cv_format").onchange=()=>{if($("#cv_output").value.trim())convertNow();};
+$("#cv_dl").onclick=async()=>{
+  if(!await convertNow())return;                 // always (re)convert in the selected format first
+  const fmt=$("#cv_format").value,ext=EXT[fmt]||"txt";
+  const root=($("#cv_root").value||"schema").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"schema";
+  const mime=fmt==="json-schema"?"application/json":"text/plain";
+  const u=URL.createObjectURL(new Blob([$("#cv_output").value],{type:mime}));
+  const a=document.createElement("a");a.href=u;a.download=root+"."+ext;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);
+  const b=$("#cv_dl"),o=b.textContent;b.textContent="Downloaded ✓";setTimeout(()=>b.textContent=o,1500);};
 $("#cv_copy").onclick=async()=>{const t=$("#cv_output").value;if(!t)return;const b=$("#cv_copy"),o=b.textContent;
   try{await navigator.clipboard.writeText(t);}catch(e){$("#cv_output").select();document.execCommand("copy");}
   b.textContent="Copied!";setTimeout(()=>b.textContent=o,1500);};
-const EXT={"json-schema":"json","typescript":"ts","python":"py","go":"go","java":"java","sql":"sql"};
-$("#cv_dl").onclick=()=>{const t=$("#cv_output").value;if(!t)return;
-  const fmt=$("#cv_format").value;const ext=EXT[fmt]||"txt";
-  const root=($("#cv_root").value||"schema").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"schema";
-  const mime=fmt==="json-schema"?"application/json":"text/plain";
-  const u=URL.createObjectURL(new Blob([t],{type:mime}));
-  const a=document.createElement("a");a.href=u;a.download=root+"."+ext;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);
-  const b=$("#cv_dl"),o=b.textContent;b.textContent="Downloaded ✓";setTimeout(()=>b.textContent=o,1500);};
 </script>"""
 
 
