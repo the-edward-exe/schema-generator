@@ -163,7 +163,7 @@ GEN_BODY = """
 <div class="row"><div><label class="req">Business name</label><input name="name" required></div>
 <div><label class="req">Domain</label><input name="domain" placeholder="https://www.acme.com" required></div></div>
 <button type="button" id="scanbtn" class="copybtn" style="margin-top:.7rem">&#9889; Fill from Site Scan</button>
-<span class="hint" style="margin-left:.5rem">Crawl the homepage to pre-fill the empty fields below — then review &amp; edit before generating.</span>
+<span class="hint" id="scanhint" style="margin-left:.5rem">Crawl the homepage to pre-fill the empty fields below — then review &amp; edit before generating.</span>
 <div class="row" style="margin-top:.6rem"><div><label>Industry @type <span class="hint">(Dentist, Restaurant, Store…)</span></label><input name="itype" id="f_itype" placeholder="LocalBusiness"></div>
 <div><label>Legal name</label><input name="legal"></div></div>
 <div class="row"><div><label>Phone</label><input name="phone"></div><div><label>Email</label><input name="email"></div></div>
@@ -257,9 +257,12 @@ $("#scanbtn").onclick=async()=>{
   try{const fd=new FormData();fd.append("domain",dom);
     const r=await fetch("/scan",{method:"POST",body:fd});
     if(r.ok){const d=await r.json();let n=0;
-      ["name","itype","legal","phone","email","desc","disambig","logo","social","cities","locality","region","country","street","owner","keywords","hours","price","maps"].forEach(k=>{
-        if(!d[k])return;const el=PF.querySelector('[name="'+k+'"]');if(el&&!el.value){el.value=d[k];n++;}});
+      const FIELDS=["name","itype","legal","phone","email","desc","disambig","logo","social","cities","locality","region","country","street","owner","keywords","hours","price","maps"];
+      FIELDS.forEach(k=>{if(!d[k])return;const el=PF.querySelector('[name="'+k+'"]');if(el&&!el.value){el.value=d[k];n++;}});
+      const blank=FIELDS.filter(k=>{const el=PF.querySelector('[name="'+k+'"]');return el&&!el.value.trim();});
       b.textContent=(n?("Filled "+n+" field"+(n>1?"s":"")+" ✓"):"Nothing new found");
+      $("#scanhint").textContent=(n?("Filled "+n+" from the site."):"No new fields found.")+
+        (blank.length?(" Still empty: "+blank.slice(0,10).join(", ")+(blank.length>10?"…":"")+".") :" All fields complete.");
       setTimeout(()=>{b.textContent=o;b.disabled=false;},2200);}
     else{let m="Scan failed.";try{const j=await r.json();if(j&&j.error)m=j.error;}catch(_){}
       fe.textContent="Error: "+m;fe.style.display="block";b.textContent=o;b.disabled=false;}}

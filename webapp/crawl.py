@@ -255,6 +255,19 @@ def _names(v):
     return [n for n in (_text(x) for x in items) if n]
 
 
+def _contacts(soup):
+    """(email, phone) from mailto:/tel: links."""
+    email = phone = ""
+    for a in soup.find_all("a", href=True):
+        h = a["href"].strip()
+        low = h.lower()
+        if low.startswith("mailto:") and not email:
+            email = h.split(":", 1)[1].split("?")[0].strip()
+        elif low.startswith("tel:") and not phone:
+            phone = h.split(":", 1)[1].strip()
+    return email, phone
+
+
 def _jsonld_nodes(html):
     nodes = []
     soup = BeautifulSoup(html, "html.parser")
@@ -344,6 +357,38 @@ def scan(domain, timeout=20):
         "price": _text(g("priceRange")),
         "maps": _img(g("hasMap")) or _text(g("hasMap")),
     }
+
+    # Homepage mailto:/tel: fallback for contact details.
+    hemail, hphone = _contacts(soup)
+    res["email"] = res["email"] or hemail
+    res["phone"] = res["phone"] or hphone
+
+    # Deep fallback: if still missing phone/email/address, check a Contact/About page.
+    if not (res["phone"] and res["email"] and res["locality"]):
+        host = p.netloc
+        target = None
+        for a in soup.find_all("a", href=True):
+            u = _norm(base, host, a["href"])
+            if u and any(k in u.lower() for k in ("contact", "about")):
+                target = u
+                break
+        if target:
+            cr = _get(target, timeout=timeout)
+            if cr:
+                csoup = BeautifulSoup(cr.text, "html.parser")
+                ce, cp = _contacts(csoup)
+                res["email"] = res["email"] or ce
+                res["phone"] = res["phone"] or cp
+                for n in _jsonld_nodes(cr.text):
+                    res["phone"] = res["phone"] or _text(n.get("telephone"))
+                    res["email"] = res["email"] or _text(n.get("email"))
+                    ad = n if "PostalAddress" in _types(n) else (
+                        n.get("address") if isinstance(n.get("address"), dict) else None)
+                    if ad:
+                        res["locality"] = res["locality"] or _text(ad.get("addressLocality"))
+                        res["region"] = res["region"] or _text(ad.get("addressRegion"))
+                        res["country"] = res["country"] or _text(ad.get("addressCountry"))
+                        res["street"] = res["street"] or _text(ad.get("streetAddress"))
     return {k: v for k, v in res.items() if v}
 
 
